@@ -149,36 +149,48 @@
                                 class="btn btn-sm btn-warning">Обновить</a>
                         </div>
                     </div>
+                    <div class="p-4">
+
+<div class="progress-stacked">
+  <div class="progress" role="progressbar" aria-label="Segment primary" aria-valuenow="{{ progress_dct.primary1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.primary1 }}%">
+    <div class="progress-bar bg-primary"></div>
+  </div>
+  <div class="progress" role="progressbar" aria-label="Segment warning" aria-valuenow="{{ progress_dct.warning1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.warning1 }}%">
+    <div class="progress-bar bg-warning"></div>
+  </div>
+  <div class="progress" role="progressbar" aria-label="Segment danger" aria-valuenow="{{ progress_dct.danger1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.danger1 }}%">
+    <div class="progress-bar bg-danger"></div>
+  </div>
+  <div class="progress" role="progressbar" aria-label="Segment success" aria-valuenow="{{ progress_dct.success1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.success1 }}%">
+    <div class="progress-bar bg-success"></div>
+  </div>  
+  <div class="progress" role="progressbar" aria-label="Segment secondary" aria-valuenow="{{ progress_dct.secondary1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.secondary1 }}%">
+    <div class="progress-bar bg-secondary"></div>
+  </div>
+</div>
+
+                    </div>
                     <div class="card-body">
 
                         <div class="row g-3">
                             {% for row in table_data %}
                             <div class="col-12">
                                 <div
-                                    class="issue-item {% if row.highlight %}border-danger{% else %}border-primary{% endif %}">
+                                    class="issue-item {{ row.border }}">
                                     <div><strong>Номер строки:</strong> {{ row.line }}</div>
                                     {% if row.bandit %}
                                     <div class="issue-bandit mt-2 p-2 bg-light rounded">
                                         <h5>Bandit</h5>
                                         <p><b>{{ row.bandit.test_id }}: <a href="{{ row.bandit.more_info }}">{{ row.bandit.test_name }}</a></b></p>
-                                        <p>Issue Confidence: {{ row.bandit.issue_confidence }}</p>
-                                        <p>issue_cwe: {{ row.bandit.issue_cwe.id }} {{ row.bandit.issue_cwe.link }}</p>
-                                        <p>issue_severity: {{ row.bandit.issue_severity }}</p>
-                                        <p>issue_text: {{ row.bandit.issue_text }}</p>
+                                        <p><b><a href="{{ row.bandit.issue_cwe.link }}">{{ row.bandit.issue_cwe.id }}</a> {{ row.bandit.issue_severity }} /  {{ row.bandit.issue_confidence }}</p></b></p>
+                                        <p>{{ row.bandit.issue_text }}</p>
                                         <pre><code>{{ row.bandit.code }}</code></pre>
-                                        <pre>{{ row.bandit }}</pre>
                                     </div>
                                     {% endif %}
                                     {% if row.pylint %}
                                     <div class="issue-pylint mt-2 p-2 bg-light rounded">
                                         <h5>Pylint</h5>
                                         <p><b>{{ row.pylint.message_id }}: {{ row.pylint.message }}</b></p>
-                                        <p>Type: {{ row.pylint.type }}</p>
-                                        <p>Module: {{ row.pylint.module }}</p>
-                                        {% if row.pylint.obj %}
-                                        <p>Obj: {{ row.pylint.obj }}</p>
-                                        {% endif %}
-                                        <p>Symbol: {{ row.pylint.symbol }}</p>
                                         <!-- <pre>{{ row.pylint }}</pre> -->
                                     </div>
                                     {% endif %}

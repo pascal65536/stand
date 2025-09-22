@@ -11,43 +11,6 @@ DATA_DIR = 'data'
 os.makedirs(DATA_DIR, exist_ok=True)
 
 
-# def run_bandit(filepath):
-#     try:
-#         result = subprocess.run(['bandit', '-f', 'json', '-r', filepath],
-#                                 capture_output=True, text=True, timeout=30)
-#         if result.returncode not in (0, 1):
-#             return "{}"
-#         return result.stdout or "{}"
-#     except Exception as e:
-#         print(f"Bandit error: {e}")
-#         return "{}"
-
-
-# def run_pylint(filepath):
-#     try:
-#         result = subprocess.run(['pylint', filepath, '--output-format=json'],
-#                                 capture_output=True, text=True, timeout=30)
-#         output = result.stdout.strip()
-#         if not output:
-#             return "[]"
-#         return output
-#     except Exception as e:
-#         print(f"Pylint error: {e}")
-#         return "[]"
-
-
-# def run_flake8(filepath):
-#     try:
-#         result = subprocess.run(['flake8', filepath, '--format=json'],
-#                                 capture_output=True, text=True, timeout=30)
-#         output = result.stdout.strip()
-#         if not output:
-#             return "{}"
-#         return output
-#     except Exception as e:
-#         print(f"Flake8 error: {e}")
-#         return "{}"
-
 def run_bandit(filepath):
     result = subprocess.run(['bandit', '-f', 'json', '-r', filepath],
                             capture_output=True, text=True)
@@ -94,11 +57,6 @@ def scan_python_files(root_dir):
     return py_files
 
 
-def reset_project_data():
-    """Очищает все данные о файлах и отчетах — начинаем с чистого листа"""
-    save_json('data', 'files.json', {})
-    save_json('data', 'filecheck.json', {})
-
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -106,15 +64,15 @@ def index():
     report = None
     selected_key = request.args.get('key')
     selected_file_info = None
+    table_data = []
 
     if request.method == 'POST':
         project_path = request.form.get('project_path', '').strip()
         if project_path and os.path.exists(project_path) and os.path.isdir(project_path):
-            reset_project_data()
+            save_json('data', 'files.json', {})
+            save_json('data', 'filecheck.json', {})
             files_dct = {}
-
             all_py_files = scan_python_files(project_path)
-
             if not all_py_files:
                 flash("В указанной директории не найдено .py файлов.", "warning")
                 return redirect(url_for('index'))
@@ -132,10 +90,8 @@ def index():
                     'project_root': project_path
                 }
 
-            # Сохраняем список файлов
             save_json('data', 'files.json', files_dct)
 
-            # Генерируем отчеты для всех файлов
             for fp in all_py_files:
                 key = calculate_md5(fp)
                 update_reports_for_file(key, fp)
@@ -150,15 +106,122 @@ def index():
         selected_file_info = files_dct[selected_key]
         filecheck_dct = load_json('data', 'filecheck.json', default={})
         report = filecheck_dct.get(selected_key)
-        print(report)
+
+        if report:
+            # Группировка данных по номерам строк и анализаторам
+            grouped = {}  # { line_num: {analyzer: [description, ...], ...}, ... }
+
+            for analyzer, issues in report.items():
+                for issue in issues:
+                    line_num = issue.get('line_number') or issue.get('line') or ''
+                    grouped.setdefault(line_num, {}).setdefault(analyzer, dict())
+                    grouped[line_num][analyzer] = issue
+                    
+                    # description = issue.get('issue_text') or issue.get('message') or ''
+                    # severity = issue.get('issue_severity') or ''
+                    # highlight = True if severity and severity.upper() == 'HIGH' else False
+                    # full_desc = f"{description} (Уровень: {severity})"
+
+                    # if line_num not in grouped:
+                    #     grouped[line_num] = {'bandit': [], 'pylint': [], 'flake8': [], 'highlight': False}
+                    # if analyzer.lower() in grouped[line_num]:
+                    #     grouped[line_num][analyzer.lower()].append(full_desc)
+                    # else:
+                    #     grouped[line_num][analyzer.lower()] = [full_desc]
+
+                    # if highlight:
+                    #     grouped[line_num]['highlight'] = True
+
+            # Сортируем номера строк по возрастанию (числа)
+            def line_sort_key(x):
+                try:
+                    return int(x)
+                except:
+                    return float('inf')  # нечисловые строки в конец
+
+            sorted_lines = sorted(grouped.keys(), key=line_sort_key)
+
+            # Формируем данные для таблицы
+            table_data = []
+            for line in sorted_lines:
+                row = {
+                    'line': line,
+                    'bandit': grouped[line].get('bandit'),
+                    'pylint': grouped[line].get('pylint'),
+                    'flake8': grouped[line].get('flake8'),
+                    'highlight': grouped[line].get('highlight'),
+                }
+                table_data.append(row)
+    else:
+        table_data = []
 
     return render_template(
         'index.html',
-        report=report,
         files=files_dct,
         selected_key=selected_key,
-        selected_file_info=selected_file_info
+        selected_file_info=selected_file_info,
+        table_data=table_data
     )
+
+
+# @app.route('/', methods=['GET', 'POST'])
+# def index():
+#     files_dct = load_json('data', 'files.json', default={})
+#     report = None
+#     selected_key = request.args.get('key')
+#     selected_file_info = None
+
+#     if request.method == 'POST':
+#         project_path = request.form.get('project_path', '').strip()
+#         if project_path and os.path.exists(project_path) and os.path.isdir(project_path):
+#             save_json('data', 'files.json', {})
+#             save_json('data', 'filecheck.json', {})
+#             files_dct = {}
+#             all_py_files = scan_python_files(project_path)
+#             if not all_py_files:
+#                 flash("В указанной директории не найдено .py файлов.", "warning")
+#                 return redirect(url_for('index'))
+
+#             for fp in all_py_files:
+#                 key = calculate_md5(fp)
+#                 try:
+#                     display_path = os.path.relpath(fp, project_path)
+#                 except:
+#                     display_path = fp
+#                 files_dct[key] = {
+#                     'filename': os.path.basename(fp),
+#                     'filepath': fp,
+#                     'display_path': display_path,
+#                     'project_root': project_path
+#                 }
+
+#             # Сохраняем список файлов
+#             save_json('data', 'files.json', files_dct)
+
+#             # Генерируем отчеты для всех файлов
+#             for fp in all_py_files:
+#                 key = calculate_md5(fp)
+#                 update_reports_for_file(key, fp)
+
+#             flash(f"Проект '{project_path}' загружен. Найдено и проанализировано {len(all_py_files)} Python-файлов.", "success")
+#             return redirect(url_for('index'))
+#         else:
+#             flash("Пожалуйста, укажите корректный путь к существующей директории.", "error")
+
+#     # Загружаем отчет, если выбран файл
+#     if selected_key and selected_key in files_dct:
+#         selected_file_info = files_dct[selected_key]
+#         filecheck_dct = load_json('data', 'filecheck.json', default={})
+#         report = filecheck_dct.get(selected_key)
+#         print(report)
+
+#     return render_template(
+#         'index.html',
+#         report=report,
+#         files=files_dct,
+#         selected_key=selected_key,
+#         selected_file_info=selected_file_info
+#     )
 
 
 @app.route('/refresh/<key>')

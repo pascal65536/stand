@@ -34,8 +34,7 @@ def serializable_to_ast(data):
     else:
         return data
 
-# Использование
-with open('vuln_project/insecure_app/views.py') as f:
+with open('utils.py') as f:
     source_code = f.read()
 
 tree = ast.parse(source_code)

@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import string
 import requests
@@ -16,15 +15,14 @@ def check_folder(root):
     Проверяет, содержит ли строка символы не-латиницы в папках проекта,
     исключение - фикстуры.
     """    
+    ignore_paths = ['fixtures']
     files_lst = list()
-    for root, dirs, files in os.walk(root):
+    for r, d, files in os.walk(root):
         for ignored in ignore_paths:
-            if ignored in root:
-                break
-
-        for filename in files:
-            if not set(filename) <= set(legal_chars):
-                files_lst.append(filename)
+            if ignored not in r:
+                for filename in files:
+                    if not set(filename) <= set(legal_chars):
+                        files_lst.append(filename)
     return files_lst
 
 

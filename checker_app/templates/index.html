@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <title>Отчет об анализе кода</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <style>
+        body, html { height: 100%; margin: 0; padding: 10px; }
+        .file-list { max-width: 250px; height: 90vh; overflow-y: auto; }
+        .report-view { height: 90vh; overflow-y: auto; }
+        .file-link { cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="container-fluid h-100">
+    <div class="row h-100">
+        <!-- Левый столбец с файлами -->
+        <nav class="col-md-3 bg-light file-list border-end">
+            <h4>Файлы</h4>
+            <ul class="list-group">
+                {% for key, fileinfo in files.items() %}
+                    <a href="{{ url_for('index') }}?key={{ key }}" class="list-group-item list-group-item-action {% if selected_key == key %}active{% endif %}">
+                        {{ fileinfo.filename }}
+                    </a>
+                {% endfor %}
+            </ul>
+            <form method="POST" enctype="multipart/form-data" action="/">
+                <input type="file" name="file" accept=".py" required />
+                <button type="submit" class="btn btn-primary my-2">Загрузить файл</button>
+            </form>
+        </nav>
+
+        <!-- Правый столбец с отчетом -->
+        <main class="col-md-9 report-view">
+            {% if selected_key and report %}
+                <!-- Bandit -->
+                <h2>Bandit</h2>
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Файл</th><th>Строка</th><th>Серьезность</th><th>ID проверки</th><th>Описание</th><th>Ссылка</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in report.bandit %}
+                        <tr>
+                            <td>{{ issue.filename }}</td>
+                            <td>{{ issue.line_number }}</td>
+                            <td>{{ issue.issue_severity }}</td>
+                            <td>{{ issue.test_id }}</td>
+                            <td>{{ issue.issue_text }}</td>
+                            <td><a href="{{ issue.more_info }}" target="_blank">Подробнее</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pylint -->
+                <h2>Pylint</h2>
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Файл</th><th>Строка</th><th>Тип</th><th>ID сообщения</th><th>Сообщение</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for issue in report.pylint %}
+                        <tr>
+                            <td>{{ issue.path }}</td>
+                            <td>{{ issue.line }}</td>
+                            <td>{{ issue.type }}</td>
+                            <td>{{ issue['message-id'] }}</td>
+                            <td>{{ issue.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Flake8 -->
+                <h2>Flake8</h2>
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th>Файл</th><th>Строка</th><th>Код</th><th>Описание</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for file, issues in report.flake8.items() %}
+                            {% for issue in issues %}
+                            <tr>
+                                <td>{{ issue.filename }}</td>
+                                <td>{{ issue.line_number }}</td>
+                                <td>{{ issue.code }}</td>
+                                <td>{{ issue.text }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            {% else %}
+                <div class="alert alert-info">
+                    Выберите файл слева для отображения отчета.
+                </div>
+            {% endif %}
+        </main>
+    </div>
+</div>
+</body>
+</html>

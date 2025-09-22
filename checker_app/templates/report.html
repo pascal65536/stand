@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Анализ кода</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; margin-bottom: 30px;}
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left;}
+        th { background: #f0f0f0;}
+        h2 { margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <h1>Отчет об анализе кода</h1>
+
+    <h2>Bandit</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Файл</th>
+                <th>Строка</th>
+                <th>Серьезность</th>
+                <th>ID проверки</th>
+                <th>Описание</th>
+                <th>Ссылка</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for issue in report.bandit %}
+            <tr>
+                <td>{{ issue.filename }}</td>
+                <td>{{ issue.line_number }}</td>
+                <td>{{ issue.issue_severity }}</td>
+                <td>{{ issue.test_id }}</td>
+                <td>{{ issue.issue_text }}</td>
+                <td><a href="{{ issue.more_info }}" target="_blank">Подробнее</a></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Pylint</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Файл</th>
+                <th>Строка</th>
+                <th>Тип</th>
+                <th>ID сообщения</th>
+                <th>Сообщение</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for issue in report.pylint %}
+            <tr>
+                <td>{{ issue.path }}</td>
+                <td>{{ issue.line }}</td>
+                <td>{{ issue.type }}</td>
+                <td>{{ issue['message-id'] }}</td>
+                <td>{{ issue.message }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Flake8</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Файл</th>
+                <th>Строка</th>
+                <th>Код</th>
+                <th>Описание</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for file, issues in report.flake8.items() %}
+            {% for issue in issues %}
+            <tr>
+                <td>{{ issue.filename }}</td>
+                <td>{{ issue.line_number }}</td>
+                <td>{{ issue.code }}</td>
+                <td>{{ issue.text }}</td>
+            </tr>
+            {% endfor %}
+        {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
+

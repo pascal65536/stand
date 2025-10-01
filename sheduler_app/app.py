@@ -44,6 +44,19 @@ def run_flake8(filepath):
     return result.stdout
 
 
+def run_filestr(filepath):
+    with open(filepath) as f:
+        content = f.readlines()
+    result = []
+    for line, raw in enumerate(content):
+        result.append(
+            {
+                'line': line + 1,
+                'raw': raw.strip('\n'),
+            }
+        )
+    return result
+
 def update_reports_for_file(key, filepath):
     """
     Обновляем ошибки проекта
@@ -53,6 +66,7 @@ def update_reports_for_file(key, filepath):
         "bandit": json.loads(run_bandit(filepath)).get("results"),
         "pylint": json.loads(run_pylint(filepath)),
         "flake8": json.loads(run_flake8(filepath)).get(filepath),
+        "filestr": run_filestr(filepath),
     }
     for pyl in filecheck_dct[key]["pylint"]:
         pyl["message_id"] = pyl["message-id"]
@@ -165,40 +179,55 @@ def index():
                 match (bandit, pylint):
                     case (None, None):
                         border = "border-primary"
+                        table = "table-light"
                     case (None, "convention"):
                         border = "border-warning"
+                        table = "table-warning"
                     case (None, "warning"):
                         border = "border-warning"
+                        table = "table-warning"
                     case (None, "error"):
                         border = "border-danger"
+                        table = "table-danger"
                     case (None, "refactor"):
                         border = "border-success"
+                        table = "table-success"
                     case ("LOW", "error"):
                         border = "border-danger"                        
+                        table = "table-danger"                        
                     case ("LOW", "warning"):
                         border = "border-warning"
+                        table = "table-warning"
                     case ("LOW", "convention"):
                         border = "border-warning"
+                        table = "table-warning"
                     case ("HIGH", "convention"):
                         border = "border-danger"
+                        table = "table-danger"
                     case ("HIGH", "warning"):
                         border = "border-danger"
+                        table = "table-danger"
                     case ("MEDIUM", None):
                         border = "border-danger"
+                        table = "table-danger"
                     case ("HIGH", None):
                         border = "border-danger"        
+                        table = "table-danger"        
                     case ("LOW", None):
                         border = "border-success"                                            
+                        table = "table-success"                                            
                     case _:
                         border = "border-secondary"
-                        print(bandit, pylint)
+                        table = "table-secondary"
 
                 row = {
                     "line": line,
                     "bandit": grouped[line].get("bandit"),
                     "pylint": grouped[line].get("pylint"),
                     "flake8": grouped[line].get("flake8"),
+                    "filestr": grouped[line].get("filestr", {}).get("raw"),
                     "border": border,
+                    "table": table,
                 }
                 table_data.append(row)
                 progress_dct.setdefault("total", 0)

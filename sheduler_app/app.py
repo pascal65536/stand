@@ -77,7 +77,6 @@ def update_reports_for_file(key, filepath):
 def scan_python_files(root_dir):
     """
     Рекурсивно находит все .py файлы, игнорируя указанные директории
-    (например, .venv, __pycache__ и т.д.)
     """
     py_files = []
     if not os.path.exists(root_dir):

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "my_script.py",
+    "line": 6,
+    "message": "unused import 'os'"
+  },
+  {
+    "file": "my_script.py",
+    "line": 17,
+    "message": "unused import 'math'"
+  },
+  {
+    "file": "my_script.py",
+    "line": 20,
+    "message": "unused variable 'SECRET_KEY'"
+  },
+  {
+    "file": "my_script.py",
+    "line": 95,
+    "message": "unused function 'calculate_area'"
+  },
+  {
+    "file": "my_script.py",
+    "line": 100,
+    "message": "unused function 'unused_function'"
+  },
+  {
+    "file": "my_script.py",
+    "line": 105,
+    "message": "unused function 'long_line_function'"
+  }
+]

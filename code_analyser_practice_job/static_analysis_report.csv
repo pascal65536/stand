@@ -1,0 +1,57 @@
+tool,file,line,column,severity,message_code,message_text
+bandit,my_script.py,8,0,low,blacklist,Consider possible security implications associated with pickle module.
+bandit,my_script.py,10,0,low,blacklist,Consider possible security implications associated with the subprocess module.
+bandit,my_script.py,20,13,low,hardcoded_password_string,Possible hardcoded password: 'my_super_secret_password_123'
+bandit,my_script.py,49,18,medium,hardcoded_sql_expressions,Possible SQL injection vector through string-based query construction.
+bandit,my_script.py,58,14,medium,hardcoded_sql_expressions,Possible SQL injection vector through string-based query construction.
+bandit,my_script.py,70,11,medium,blacklist,Use of possibly insecure function - consider using safer ast.literal_eval.
+bandit,my_script.py,77,15,medium,blacklist,"Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue."
+bandit,my_script.py,122,11,high,subprocess_popen_with_shell_equals_true,"subprocess call with shell=True identified, security issue."
+flake8,my_script.py,6,1,error,F401,'os' imported but unused
+flake8,my_script.py,7,1,error,F401,'sys' imported but unused
+flake8,my_script.py,14,1,error,F403,'from behoof import *' used; unable to detect undefined names
+flake8,my_script.py,14,1,error,F401,'behoof.*' imported but unused
+flake8,my_script.py,17,1,error,F401,'math' imported but unused
+flake8,my_script.py,49,80,error,E501,line too long (87 > 79 characters)
+flake8,my_script.py,106,80,error,E501,line too long (141 > 79 characters)
+mypy,my_script.py,15,0,error,import-untyped,"Skipping analyzing ""behoof"": module is installed, but missing library stubs or py.typed marker"
+mypy,my_script.py,18,0,error,import-not-found,"Cannot find implementation or library stub for module named ""ipdb"""
+pylint,my_script.py,106,0,convention,line-too-long,Line too long (141/100)
+pylint,my_script.py,14,0,warning,wildcard-import,Wildcard import behoof
+pylint,my_script.py,23,0,convention,missing-class-docstring,Missing class docstring
+pylint,my_script.py,28,4,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,32,4,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,45,4,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,53,4,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,62,4,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,68,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,70,11,warning,eval-used,Use of eval
+pylint,my_script.py,74,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,81,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,85,10,error,possibly-used-before-assignment,Possibly using variable 'result' before assignment
+pylint,my_script.py,89,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,90,8,warning,unspecified-encoding,Using open without explicitly specifying an encoding
+pylint,my_script.py,90,8,refactor,consider-using-with,Consider using 'with' for resource-allocating operations
+pylint,my_script.py,95,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,100,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,105,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,110,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,115,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,120,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,126,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,130,11,warning,broad-exception-caught,Catching too general exception Exception
+pylint,my_script.py,136,0,convention,missing-function-docstring,Missing function or method docstring
+pylint,my_script.py,136,0,refactor,too-many-locals,Too many local variables (17/15)
+pylint,my_script.py,144,11,warning,broad-exception-caught,Catching too general exception Exception
+pylint,my_script.py,206,11,warning,broad-exception-caught,Catching too general exception Exception
+pylint,my_script.py,136,0,refactor,too-many-statements,Too many statements (53/50)
+pylint,my_script.py,17,0,convention,wrong-import-order,"standard import ""math"" should be placed before third party import ""behoof.*"""
+pylint,my_script.py,6,0,warning,unused-import,Unused import os
+pylint,my_script.py,7,0,warning,unused-import,Unused import sys
+pylint,my_script.py,14,0,warning,unused-wildcard-import,"Unused import(s) math, re, uuid, string, shutil, hashlib, random, datetime, binascii, vowel, consonant, rus_alphabet, transliteration, is_palindrome, is_prime, get_divisors, gcd, lcm, generate_name, name_to_hex_color, generate_alternating_name, generate_fake_name, hamming_distance, euclidean_distance, generate_random_code_string, clean_text, generate_shingles, similarity, calculate_jaccard_similarity, weighted_jaccard, calculate_md5, str_to_md5, logging_to_csv, log_action, collect_files_lst, moves_file, find_duplicate_files, delete_files, remove_empty_directories, move_file_to_folder_with_limit, upload_file, load_json, save_json, defaultdict, create, show, copy, flip_vertical, flip_horizontal, mirror, flip_diagonal_main, flip_diagonal_second, rotate_ccw, rotate_cw, base_create, matrix_calc, set_tx, set_sx, set_cx, get_new_coords, coords and base from wildcard import of behoof"
+vulture,my_script.py,6,–,info,–,unused import 'os'
+vulture,my_script.py,17,–,info,–,unused import 'math'
+vulture,my_script.py,20,–,info,–,unused variable 'SECRET_KEY'
+vulture,my_script.py,95,–,info,–,unused function 'calculate_area'
+vulture,my_script.py,100,–,info,–,unused function 'unused_function'
+vulture,my_script.py,105,–,info,–,unused function 'long_line_function'

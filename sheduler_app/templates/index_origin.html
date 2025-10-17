@@ -132,106 +132,97 @@
         </div>
 
         <!-- Основной макет: список файлов + отчет -->
-        {% if files and files|length > 0 %}
-        <div class="layout">
-            <!-- Левая колонка: список файлов -->
-            <div class="file-list card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    📄 Файлы проекта
-                    <a href="{{ url_for('refresh_all') }}" class="btn btn-sm btn-outline-secondary">Обновить все</a>
-                </div>
-                <ul class="list-group list-group-flush">
-                    {% for key, info in files.items() %}
-                    <li class="list-group-item p-0">
-                        <a href="{{ url_for('index', key=key) }}" class="file-item w-100 d-block text-decoration-none text-dark 
-                                  {% if key == selected_key %}active{% endif %}">
-                            <div>{{ info.filename }}</div>
-                            <div class="path-text">{{ info.display_path }}</div>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
-
-            <!-- Правая колонка: отчет -->
-            <div class="report-area">
-                {% if selected_key and selected_file_info %}
-                <div class="card">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                        📊 Отчет: <strong>{{ selected_file_info.filename }}</strong>
-                        <div>
-                            <span class="badge bg-secondary me-2">{{ selected_file_info.display_path }}</span>
-                            <a href="{{ url_for('refresh', key=selected_key) }}"
-                                class="btn btn-sm btn-warning">Обновить</a>
+        <div class="container-fluid mt-4">
+            <div class="row">
+                <!-- Левая колонка: список файлов -->
+                <div class="col-md-3">
+                    <div class="file-list card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            📄 Файлы проекта
+                            <a href="{{ url_for('refresh_all') }}" class="btn btn-sm btn-outline-secondary">Обновить все</a>
                         </div>
+                        <ul class="list-group list-group-flush">
+                            {% if files and files|length > 0 %}
+                            {% for key, info in files.items() %}
+                            <li class="list-group-item p-0">
+                                <a href="{{ url_for('index', key=key) }}" class="file-item w-100 d-block text-decoration-none text-dark 
+                                        {% if key == selected_key %}active{% endif %}">
+                                    <div>{{ info.filename }}</div>
+                                    <div class="path-text">{{ info.display_path }}</div>
+                                </a>
+                            </li>
+                            {% endfor %}
+                            {% endif %}
+                        </ul>
                     </div>
-                    <div class="p-4">
+                </div>
 
-<div class="progress-stacked">
-  <div class="progress" role="progressbar" aria-label="Segment primary" aria-valuenow="{{ progress_dct.primary1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.primary1 }}%">
-    <div class="progress-bar bg-primary"></div>
-  </div>
-  <div class="progress" role="progressbar" aria-label="Segment warning" aria-valuenow="{{ progress_dct.warning1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.warning1 }}%">
-    <div class="progress-bar bg-warning"></div>
-  </div>
-  <div class="progress" role="progressbar" aria-label="Segment danger" aria-valuenow="{{ progress_dct.danger1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.danger1 }}%">
-    <div class="progress-bar bg-danger"></div>
-  </div>
-  <div class="progress" role="progressbar" aria-label="Segment success" aria-valuenow="{{ progress_dct.success1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.success1 }}%">
-    <div class="progress-bar bg-success"></div>
-  </div>  
-  <div class="progress" role="progressbar" aria-label="Segment secondary" aria-valuenow="{{ progress_dct.secondary1 }}" aria-valuemin="0" aria-valuemax="100" style="width: {{ progress_dct.secondary1 }}%">
-    <div class="progress-bar bg-secondary"></div>
-  </div>
-</div>
+                <!-- Правая колонка: отчет -->
+                <div class="col-md-9">
+                    {% if selected_key and selected_file_info %}
+                    <div class="card">
+                        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                            📊 Отчет: <strong>{{ selected_file_info.filename }}</strong>
+                            <div>
+                                <span class="badge bg-secondary me-2">{{ selected_file_info.display_path }}</span>
+                                <a href="{{ url_for('refresh', key=selected_key) }}"
+                                    class="btn btn-sm btn-warning">Обновить</a>
+                            </div>
+                        </div>
 
-                    </div>
-                    <div class="card-body">
+                        <div class="card-body">
 
-                        <div class="row g-3">
-                            <div class="col-12">
+                            <div id="accordion">
                                 <table class="table table-bordered show-code">
                                 <thead>
                                     <tr>
-                                        <th>№</th>
-                                        <th>Python код</th>
+                                        <th class="text-center">№</th>
+                                        <th class="text-center">Python код</th>
+                                        <th class="text-center">BPF</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for row in table_data %}
                                     <tr class="{{ row.table }}">
-                                        <td>                                            
+                                        <td class="text-center">      
                                             {{ row.line }}
                                         </td>                                            
-                                        <td>                                            
+                                        <td>
                                             <pre><code class="language-python">{{ row.filestr }}</code></pre></td>
                                         </td>
-                                            <!-- row.bandit or row.pylint or row.flake8 -->
-                                            {% if False  %}
-                                                {% if row.bandit %}
-                                                <div class="issue-bandit mt-2 p-2 bg-light rounded">
-                                                    <h5>Bandit</h5>
+                                        <td class="text-center">    
+                                            {% if row.bandit %}
+                                            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#layer{{ row.line }}bandit" aria-expanded="false" aria-controls="layer{{ row.line }}bandit">B</button>
+                                            <div id="layer{{ row.line }}bandit" class="collapse" data-bs-parent="#accordion">
+                                                <div class="card card-body">
                                                     <p><b>{{ row.bandit.test_id }}: <a href="{{ row.bandit.more_info }}">{{ row.bandit.test_name }}</a></b></p>
                                                     <p><b><a href="{{ row.bandit.issue_cwe.link }}">{{ row.bandit.issue_cwe.id }}</a> {{ row.bandit.issue_severity }} /  {{ row.bandit.issue_confidence }}</p></b></p>
                                                     <p>{{ row.bandit.issue_text }}</p>
-                                                    <pre><code>{{ row.bandit.code }}</code></pre>
                                                 </div>
-                                                {% endif %}
-                                                {% if row.pylint %}
-                                                <div class="issue-pylint mt-2 p-2 bg-light rounded">
+                                            </div>
+                                            {% endif %}  
+
+                                            {% if row.pylint %}
+                                            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#layer{{ row.line }}pylint" aria-expanded="false" aria-controls="layer{{ row.line }}pylint">P</button>
+                                            <div id="layer{{ row.line }}pylint" class="collapse" data-bs-parent="#accordion">
+                                                <div class="card card-body">
                                                     <h5>Pylint</h5>
                                                     <p><b>{{ row.pylint.message_id }}: {{ row.pylint.message }}</b></p>
                                                 </div>
-                                                {% endif %}
-                                                {% if row.flake8 %}
-                                                <div class="issue-flake8 mt-2 p-2 bg-light rounded">
+                                            </div>                                            
+                                            {% endif %}  
+
+                                            {% if row.flake8 %}
+                                            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#layer{{ row.line }}flake8" aria-expanded="false" aria-controls="layer{{ row.line }}flake8">F</button>
+                                            <div id="layer{{ row.line }}flake8" class="collapse" data-bs-parent="#accordion">
+                                                <div class="card card-body">
                                                     <h5>Flake8</h5>
                                                     <p><b>{{ row.flake8.code }}: {{ row.flake8.text }}</b></p>
                                                 </div>
-                                                {% endif %}
-                                            {% else %}
-                                            
-                                            {% endif %}     
+                                            </div>                                            
+                                            {% endif %}  
+
+                                        </td>                                                                               
                                     </tr>
                                     {% endfor %}
                                 </tbody>
@@ -239,17 +230,11 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
                 </div>
-                {% else %}
-                <div class="card">
-                    <div class="card-body text-center text-muted">
-                        → Выберите файл слева для просмотра отчета
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
-        {% endif %}
+
 
     </div>
 

@@ -1,0 +1,60 @@
+{
+    "my_script.py": [
+        {
+            "code": "F401",
+            "filename": "my_script.py",
+            "line_number": 6,
+            "column_number": 1,
+            "text": "'os' imported but unused",
+            "physical_line": "import os\n"
+        },
+        {
+            "code": "F401",
+            "filename": "my_script.py",
+            "line_number": 7,
+            "column_number": 1,
+            "text": "'sys' imported but unused",
+            "physical_line": "import sys\n"
+        },
+        {
+            "code": "F403",
+            "filename": "my_script.py",
+            "line_number": 14,
+            "column_number": 1,
+            "text": "'from behoof import *' used; unable to detect undefined names",
+            "physical_line": "from behoof import *\n"
+        },
+        {
+            "code": "F401",
+            "filename": "my_script.py",
+            "line_number": 14,
+            "column_number": 1,
+            "text": "'behoof.*' imported but unused",
+            "physical_line": "from behoof import *\n"
+        },
+        {
+            "code": "F401",
+            "filename": "my_script.py",
+            "line_number": 17,
+            "column_number": 1,
+            "text": "'math' imported but unused",
+            "physical_line": "import math\n"
+        },
+        {
+            "code": "E501",
+            "filename": "my_script.py",
+            "line_number": 49,
+            "column_number": 80,
+            "text": "line too long (87 > 79 characters)",
+            "physical_line": "        query = f\"INSERT INTO users (username, email) VALUES ('{username}', '{email}')\"\n"
+        },
+        {
+            "code": "E501",
+            "filename": "my_script.py",
+            "line_number": 106,
+            "column_number": 80,
+            "text": "line too long (141 > 79 characters)",
+            "physical_line": "    return \"This is a very long line that exceeds the recommended 79 or even 88 character limit and should be wrapped properly but it is not\"\n"
+        }
+    ]
+}

@@ -1,0 +1,17 @@
+[
+  {
+    "file": "ideapp.py",
+    "line": 2,
+    "message": "unused import 'subprocess'"
+  },
+  {
+    "file": "ideapp.py",
+    "line": 4,
+    "message": "unused import 'QMenu'"
+  },
+  {
+    "file": "ideapp.py",
+    "line": 4,
+    "message": "unused import 'QMenuBar'"
+  }
+]

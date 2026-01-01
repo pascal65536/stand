@@ -34,7 +34,7 @@ def serializable_to_ast(data):
     else:
         return data
 
-with open('utils.py') as f:
+with open('check.py') as f:
     source_code = f.read()
 
 tree = ast.parse(source_code)

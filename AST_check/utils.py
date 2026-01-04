@@ -74,7 +74,7 @@ def pypi_search(package_name):
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Использование: python pypi_search.py <имя_пакета>")
+        print("Использование: python utils.py <имя_пакета>")
         sys.exit(1)
     package_name = sys.argv[1]
     pypi_lst = pypi_search(package_name)
@@ -82,3 +82,17 @@ if __name__ == "__main__":
     package_dct = load_json("data", "package.json")
     package_dct[package_name] = pypi_lst
     package_dct = save_json("data", "package.json", package_dct)
+
+    source_file_path = sys.argv[1]
+    has_char = check_folder(source_file_path)
+    print(has_char)
+
+    source_file_path = sys.argv[1]
+    has_gitignore = check_gitignore(source_file_path)
+    print(has_gitignore)
+
+    source_file_path = sys.argv[1]
+    has_requirements = check_requirements(source_file_path)
+    print(has_requirements)
+
+    

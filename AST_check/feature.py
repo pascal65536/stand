@@ -1,9 +1,12 @@
 import ast
-import pprint
+from collections import defaultdict
 
 
 class Feature(ast.NodeVisitor):
     def __init__(self):
+        self.assignments = []
+        self.usages = []
+        self.all_vars = []
         self.errors = []
         self.features = {
             "if": [],
@@ -24,7 +27,6 @@ class Feature(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Call(self, node):
-        """Имя вызываемой функции может быть как Name, так и Attribute"""
         if isinstance(node.func, ast.Name):
             self.features["calls"].append(node.func.id)
         elif isinstance(node.func, ast.Attribute):
@@ -62,13 +64,15 @@ class Feature(ast.NodeVisitor):
             self.features["constant"].append(node.__dict__)
         self.generic_visit(node)
 
-    def visit_Name(self, node):
-        # import ipdb; ipdb.sset_trace()
-        if isinstance(node.id, str):
-            self.features["name"].append(node.id)
-        else:
-            self.features["name"].append(node)
-        self.generic_visit(node)
+
+    # def visit_Subscript(self, node):
+    #     # Проверяем, что в обращении к словарю ключ — строка
+    #     if isinstance(node.value, ast.Name) and node.value.id == "user_obj":
+    #         if not isinstance(node.slice, ast.Constant):
+    #             self.errors.append(
+    #                 f"Ошибка: ключ user_obj должен быть строкой, строка {node.lineno}"
+    #             )
+    #     self.generic_visit(node)
 
     # def visit_Subscript(self, node):
     #     print("-" * 80)
@@ -77,21 +81,43 @@ class Feature(ast.NodeVisitor):
     #     print(node.slice)
     #     print(node.__dict__)
     #     self.generic_visit(node)
+    
 
-    def visit_Subscript(self, node):
-        # Проверяем, что в обращении к словарю ключ — строка
-        if isinstance(node.value, ast.Name) and node.value.id == "user_obj":
-            if not isinstance(node.slice, ast.Constant):
-                self.errors.append(
-                    f"Ошибка: ключ user_obj должен быть строкой, строка {node.lineno}"
-                )
+    # def visit_Name(self, node):
+    #     if isinstance(node.id, str):
+    #         self.features["name"].append(node.id)
+    #     else:
+    #         self.features["name"].append(node)
+    #     self.generic_visit(node)
+
+
+
+    def visit_Name(self, node):
+        if isinstance(node.ctx, ast.Store):
+            self.assignments.append(node.id)
+            self.all_vars.append(node.id)
+        elif isinstance(node.ctx, ast.Load):
+            self.usages.append(node.id)
+            self.all_vars.append(node.id)
+        elif isinstance(node.ctx, ast.Del):
+            # Можно отследить удаление переменной
+            self.all_vars.append(node.id)
         self.generic_visit(node)
 
+    def visit_arg(self, node):
+        # Аргументы функции тоже считаем переменными с присваиванием
+        self.assignments.append(node.arg)
+        self.all_vars.append(node.arg)
+        self.generic_visit(node)
 
-if __name__ == "__main__":
-    with open("sample.py") as f:
-        code_str = f.read()
-    tree = ast.parse(code_str)
-    feature_obj = Feature()
-    feature_obj.visit(tree)
-    pprint.pprint(feature_obj.features)
+    def analyze(self, code_str):
+        tree = ast.parse(code_str)
+        self.visit(tree)
+        return {
+            "all_variables": self.all_vars,
+            "assigned_variables": self.assignments,
+            "used_variables": self.usages,
+        }
+        print("Все найденные переменные:", result["all_variables"])
+        print("Переменные с присваиванием:", result["assigned_variables"])
+        print("Переменные, которые используются:", result["used_variables"])

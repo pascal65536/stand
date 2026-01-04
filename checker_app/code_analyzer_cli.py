@@ -12,35 +12,45 @@ TOOLS = {
     "4": "bandit",
     "5": "vulture",
     "6": "pycodestyle",  # <-- ДОБАВЛЕНО
-    "0": "exit"
+    "0": "exit",
 }
+
 
 def run_command(cmd: list) -> str:
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         return result.stdout
     except FileNotFoundError:
-        print(f"Ошибка: команда {' '.join(cmd)} не найдена. Убедитесь, что инструмент установлен.")
+        print(
+            f"Ошибка: команда {' '.join(cmd)} не найдена. Убедитесь, что инструмент установлен."
+        )
         return ""
+
 
 # --- Анализаторы ---
 def analyze_pylint(filepath: str) -> str:
     return run_command(["pylint", filepath, "--output-format=json"])
 
+
 def analyze_flake8(filepath: str) -> str:
     return run_command(["flake8", filepath, "--format=json"])
+
 
 def analyze_mypy(filepath: str) -> str:
     return run_command(["mypy", filepath, "--output=json"])
 
+
 def analyze_bandit(filepath: str) -> str:
     return run_command(["bandit", filepath, "-f", "json"])
+
 
 def analyze_vulture(filepath: str) -> str:
     try:
         result = subprocess.run(
             [sys.executable, "vulture_to_json.py", filepath, "temp_vulture.json"],
-            capture_output=True, text=True, check=False
+            capture_output=True,
+            text=True,
+            check=False,
         )
         if result.returncode == 0 and Path("temp_vulture.json").exists():
             with open("temp_vulture.json", "r", encoding="utf-8") as f:
@@ -53,6 +63,7 @@ def analyze_vulture(filepath: str) -> str:
     except Exception as e:
         print(f"Исключение при обработке vulture: {e}")
         return ""
+
 
 def analyze_pycodestyle(filepath: str) -> str:
     # pycodestyle не поддерживает --format=json, поэтому парсим текст
@@ -67,13 +78,16 @@ def analyze_pycodestyle(filepath: str) -> str:
         match = re.match(pattern, line)
         if match:
             _, line_no, col_no, code, message = match.groups()
-            errors.append({
-                "line": int(line_no),
-                "column": int(col_no),
-                "code": code,
-                "message": message.strip()
-            })
+            errors.append(
+                {
+                    "line": int(line_no),
+                    "column": int(col_no),
+                    "code": code,
+                    "message": message.strip(),
+                }
+            )
     return json.dumps({"errors": errors}, indent=2, ensure_ascii=False)
+
 
 # --- Сохранение ---
 def save_report(tool: str, output: str, filename: str):
@@ -86,8 +100,14 @@ def save_report(tool: str, output: str, filename: str):
     except json.JSONDecodeError:
         # Если всё же пришёл не JSON (маловероятно после обработки)
         with open(json_filename, "w", encoding="utf-8") as f:
-            json.dump({"raw_output": output.strip().splitlines()}, f, indent=2, ensure_ascii=False)
+            json.dump(
+                {"raw_output": output.strip().splitlines()},
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
         print(f"Отчёт (сырой вывод) сохранён в {json_filename}")
+
 
 # --- Основная логика ---
 def main():
@@ -142,6 +162,7 @@ def main():
             print(f"{tool_name} не вернул данных.")
 
         save_report(tool_name, output, filename)
+
 
 if __name__ == "__main__":
     main()

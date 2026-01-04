@@ -6,27 +6,27 @@ from urllib.parse import urlparse
 def fix_protocol(s):
     s = s.strip()
     # Исправляем распространённые ошибки протоколов и пробелов
-    s = re.sub(r'vk\s*\.\s*com', 'vk.com', s, flags=re.I)
-    s = re.sub(r'vk/com', 'vk.com', s, flags=re.I)  # исправление для теста №33
-    s = re.sub(r'(?i)hhtps', 'https', s)
-    s = re.sub(r'(?i)httpc', 'https', s)
-    s = re.sub(r'(?i)https:/([^/])', r'https://\1', s)
-    s = re.sub(r'(?i)https//', 'https://', s)
-    s = re.sub(r'(?i)http://vk/com', 'https://vk.com', s)
+    s = re.sub(r"vk\s*\.\s*com", "vk.com", s, flags=re.I)
+    s = re.sub(r"vk/com", "vk.com", s, flags=re.I)  # исправление для теста №33
+    s = re.sub(r"(?i)hhtps", "https", s)
+    s = re.sub(r"(?i)httpc", "https", s)
+    s = re.sub(r"(?i)https:/([^/])", r"https://\1", s)
+    s = re.sub(r"(?i)https//", "https://", s)
+    s = re.sub(r"(?i)http://vk/com", "https://vk.com", s)
     return s
 
 
 def normalize_domain(url):
-    url = re.sub(r'https://m\.vk\.ru', 'https://vk.com', url)
-    url = re.sub(r'https://vk\.ru', 'https://vk.com', url)
-    url = re.sub(r'https://fast\.vk\.com', 'https://vk.com', url)
+    url = re.sub(r"https://m\.vk\.ru", "https://vk.com", url)
+    url = re.sub(r"https://vk\.ru", "https://vk.com", url)
+    url = re.sub(r"https://fast\.vk\.com", "https://vk.com", url)
     return url
 
 
 def strip_params(url):
     # userapi jpg
     if "userapi.com" in url:
-        m = re.search(r'(.+?\.jpg)', url)
+        m = re.search(r"(.+?\.jpg)", url)
         if m:
             return m.group(1)
 
@@ -36,7 +36,7 @@ def strip_params(url):
 
     # docs.google.com
     if "docs.google.com" in url:
-        return url.split('?', 1)[0]
+        return url.split("?", 1)[0]
 
     # ok.ru mobile
     if "m.ok.ru" in url:
@@ -46,14 +46,14 @@ def strip_params(url):
         return "https://ok.ru/dk"
 
     # vk wall/public/club
-    url = re.sub(r'(vk\.com/wall-[0-9_]+).*', r'\1', url)
-    url = re.sub(r'(vk\.com/public[0-9]+).*', r'\1', url)
-    url = re.sub(r'(vk\.com/club[0-9]+).*', r'\1', url)
+    url = re.sub(r"(vk\.com/wall-[0-9_]+).*", r"\1", url)
+    url = re.sub(r"(vk\.com/public[0-9]+).*", r"\1", url)
+    url = re.sub(r"(vk\.com/club[0-9]+).*", r"\1", url)
 
     # Обрезаем лишние параметры после '?', если это не feed/wall/public/club
-    if '?' in url:
-        base, _ = url.split('?', 1)
-        if not re.search(r'vk\.com/(wall|public|club|feed)', url):
+    if "?" in url:
+        base, _ = url.split("?", 1)
+        if not re.search(r"vk\.com/(wall|public|club|feed)", url):
             url = base
 
     return url
@@ -64,8 +64,8 @@ def extract_urls(text):
     text = text.replace("https://", " https://").replace("http://", " http://")
     # Находим все потенциальные ссылки
     urls = re.findall(
-        r'(https?://[^\s,;]+|t\.me/[^\s,;]+|vk\.com/[^\s,;]+|ok\.ru/[^\s,;]+|telesco\.pe/[^\s,;]+)',
-        text
+        r"(https?://[^\s,;]+|t\.me/[^\s,;]+|vk\.com/[^\s,;]+|ok\.ru/[^\s,;]+|telesco\.pe/[^\s,;]+)",
+        text,
     )
     return urls
 
@@ -80,16 +80,21 @@ def fix_url(url):
 
     # Если явно не vk, t.me, ok.ru, gosuslugi, google, userapi, telesco.pe — пропускаем
     if not (
-        "vk" in url or "t.me" in url or "ok.ru" in url or
-        "gosuslugi" in url or "google" in url or "userapi" in url or "telesco.pe" in url
+        "vk" in url
+        or "t.me" in url
+        or "ok.ru" in url
+        or "gosuslugi" in url
+        or "google" in url
+        or "userapi" in url
+        or "telesco.pe" in url
     ):
         return None
 
     # Заменяем http на https
     if url.startswith("http://"):
-        url = "https://"+url[7:]
+        url = "https://" + url[7:]
     if not url.startswith("https://"):
-        url = "https://"+url
+        url = "https://" + url
 
     url = normalize_domain(url)
     url = strip_params(url)
@@ -111,7 +116,7 @@ def process_line(line):
             fixed.append(f)
 
     # Проверяем слипшиеся ссылки (тест №9)
-    if re.search(r'https://\S+https://', line):
+    if re.search(r"https://\S+https://", line):
         return fixed
 
     # Обычное удаление дублей в строке
@@ -145,7 +150,7 @@ if __name__ == "__main__":
     for url in uniq_urls:
         if "ok.ru" in url:
             counts["OK"] += 1
-        elif "t.me/" in url:        # TG считаем только по t.me
+        elif "t.me/" in url:  # TG считаем только по t.me
             counts["TG"] += 1
         elif "vk.com" in url:
             counts["VK"] += 1

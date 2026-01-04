@@ -6,7 +6,7 @@ class ErrorFinder(ast.NodeVisitor):
         self.errors = []
 
     def visit_Subscript(self, node):
-        print('-' * 80)
+        print("-" * 80)
         print(node.value)
         print(node.value.id)
         print(node.slice)

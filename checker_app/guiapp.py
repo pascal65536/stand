@@ -26,11 +26,12 @@ TEXT_EXTENSIONS = {".txt", ".py", ".md", ".log", ".cfg", ".ini", ".json", ".csv"
 class MainWindow(QMainWindow):
     """
     Главное окно приложения для синтаксического анализа кода.
-    
+
     Приложение предоставляет графический интерфейс для просмотра файлов,
     их анализа с помощью различных инструментов (pylint, flake8, mypy, bandit, vulture)
     и отображения результатов анализа в табличном виде и в формате JSON.
     """
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Учебный синтаксический анализатор кода")
@@ -77,16 +78,18 @@ class MainWindow(QMainWindow):
         # ====== ТАБЛИЦА ======
         self.table = QTableWidget()
         self.table.setColumnCount(8)
-        self.table.setHorizontalHeaderLabels([
-            "#",
-            "pylint",
-            "flake8",
-            "mypy",
-            "bandit",
-            "vulture",
-            "custom",
-            "text",
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "#",
+                "pylint",
+                "flake8",
+                "mypy",
+                "bandit",
+                "vulture",
+                "custom",
+                "text",
+            ]
+        )
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
 
@@ -274,9 +277,7 @@ class MainWindow(QMainWindow):
             },
             "vulture": {
                 "text": f"vulture {file_str}",
-                "json": (
-                    f"python vulture_to_json.py {file_str} {vulture_json.name}"
-                ),
+                "json": (f"python vulture_to_json.py {file_str} {vulture_json.name}"),
             },
         }
 

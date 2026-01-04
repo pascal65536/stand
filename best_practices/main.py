@@ -364,7 +364,7 @@ class UniversalChecker:
 
     def check_function_docstrings(self, node):
         issues = []
-        
+
         if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and not ast.get_docstring(
             node
         ):
@@ -384,7 +384,7 @@ class UniversalChecker:
         """Проверка наличия аннотаций типов"""
         issues = []
         if not isinstance(node, ast.FunctionDef):
-            return issues            
+            return issues
         # Проверяем отсутствие аннотаций типов для параметров
         for arg in node.args.args:
             if not arg.annotation and arg.arg != "self":
@@ -422,13 +422,20 @@ class UniversalChecker:
     def check_hardcoded_config(self, node):
         """Проверка жестко закодированных конфигураций"""
         issues = []
-        if isinstance(node, ast.Assign) and 'targets' in node.__dict__ and any(
-            isinstance(target, ast.Name)
-            and "config" in target.id.lower()
-            or "setting" in target.id.lower()
-            for target in node.targets if 'id' in target.__dict__
+        if (
+            isinstance(node, ast.Assign)
+            and "targets" in node.__dict__
+            and any(
+                isinstance(target, ast.Name)
+                and "config" in target.id.lower()
+                or "setting" in target.id.lower()
+                for target in node.targets
+                if "id" in target.__dict__
+            )
         ):
-            import pdb; pdb.set_trace()
+            import pdb
+
+            pdb.set_trace()
 
             if self.contains_sensitive_value(node.value):
                 issues.append(
@@ -579,7 +586,7 @@ class UniversalChecker:
         """Проверка наличия аннотаций типов"""
         issues = []
         if not isinstance(node, ast.FunctionDef):
-            return issues            
+            return issues
         # Проверяем отсутствие аннотаций типов для параметров
         for arg in node.args.args:
             if not arg.annotation and arg.arg != "self":

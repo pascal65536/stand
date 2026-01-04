@@ -87,6 +87,7 @@ class Feature(ast.NodeVisitor):
                 )
         self.generic_visit(node)
 
+
 if __name__ == "__main__":
     with open("sample.py") as f:
         code_str = f.read()

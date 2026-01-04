@@ -1,6 +1,7 @@
 import ast
 from collections import defaultdict
 
+
 class VariableUsageAnalyzer(ast.NodeVisitor):
     def __init__(self):
         self.assignments = set()
@@ -29,10 +30,11 @@ class VariableUsageAnalyzer(ast.NodeVisitor):
         tree = ast.parse(code_str)
         self.visit(tree)
         return {
-            'all_variables': self.all_vars,
-            'assigned_variables': self.assignments,
-            'used_variables': self.usages
+            "all_variables": self.all_vars,
+            "assigned_variables": self.assignments,
+            "used_variables": self.usages,
         }
+
 
 if __name__ == "__main__":
     code = """
@@ -50,6 +52,6 @@ def check_folder(root):
 """
     analyzer = VariableUsageAnalyzer()
     result = analyzer.analyze(code)
-    print("Все найденные переменные:", result['all_variables'])
-    print("Переменные с присваиванием:", result['assigned_variables'])
-    print("Переменные, которые используются:", result['used_variables'])
+    print("Все найденные переменные:", result["all_variables"])
+    print("Переменные с присваиванием:", result["assigned_variables"])
+    print("Переменные, которые используются:", result["used_variables"])

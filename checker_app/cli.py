@@ -98,13 +98,12 @@ if __name__ == "__main__":
     filename = "my_script.py"
 
     result = dict()
-    result['bandit'] = run_bandit(filename)
-    result['pylint'] = run_pylint(filename)
-    result['flake8'] = run_flake8(filename)
-    result['mypy'] = run_mypy(filename)
-    result['vulture'] = run_vulture(filename)
-    result['pycodestyle'] = run_pycodestyle(filename)
-    result['ast'] = run_ast(filename)
-
+    result["bandit"] = run_bandit(filename)
+    result["pylint"] = run_pylint(filename)
+    result["flake8"] = run_flake8(filename)
+    result["mypy"] = run_mypy(filename)
+    result["vulture"] = run_vulture(filename)
+    result["pycodestyle"] = run_pycodestyle(filename)
+    result["ast"] = run_ast(filename)
 
     save_json("1", "1.json", result)

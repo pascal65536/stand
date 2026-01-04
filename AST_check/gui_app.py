@@ -2,11 +2,18 @@ import sys
 import ast
 import json
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QTextEdit, QTreeWidget, QTreeWidgetItem, QPushButton, QFileDialog
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QTextEdit,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QPushButton,
+    QFileDialog,
 )
 from PyQt6.QtCore import Qt
-
 
 
 def check_code_custom(ast_dict):
@@ -22,7 +29,7 @@ def check_code_custom(ast_dict):
 def ast_to_serializable(node):
     """Рекурсивно преобразует AST в сериализуемую структуру"""
     if isinstance(node, ast.AST):
-        result = {'_type': type(node).__name__}
+        result = {"_type": type(node).__name__}
         for field in node._fields:
             value = getattr(node, field)
             result[field] = ast_to_serializable(value)
@@ -35,8 +42,8 @@ def ast_to_serializable(node):
 
 def serializable_to_ast(data):
     """Рекурсивно преобразует сериализуемую структуру обратно в AST"""
-    if isinstance(data, dict) and '_type' in data:
-        node_type = data['_type']
+    if isinstance(data, dict) and "_type" in data:
+        node_type = data["_type"]
         node_class = getattr(ast, node_type)
         kwargs = {}
         for field in node_class._fields:
@@ -88,7 +95,9 @@ class ASTViewer(QMainWindow):
         self.result_output = QTextEdit()
         self.result_output.setReadOnly(True)
         self.result_output.setMaximumHeight(120)
-        self.result_output.setPlaceholderText("Результат проверки AST → JSON → AST появится здесь...")
+        self.result_output.setPlaceholderText(
+            "Результат проверки AST → JSON → AST появится здесь..."
+        )
 
         # Сборка макета
         main_layout.addLayout(top_layout, 4)
@@ -106,7 +115,6 @@ class ASTViewer(QMainWindow):
             except Exception as e:
                 self.code_editor.setPlainText(f"# Ошибка загрузки файла:\n{e}")
 
-
     def save_json_ast(self):
         code = self.code_editor.toPlainText()
         if not code.strip():
@@ -114,7 +122,9 @@ class ASTViewer(QMainWindow):
         try:
             tree = ast.parse(code)
             serializable = ast_to_serializable(tree)
-            file_path, _ = QFileDialog.getSaveFileName(self, "Сохранить AST как JSON", "", "JSON Files (*.json)")
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "Сохранить AST как JSON", "", "JSON Files (*.json)"
+            )
             if file_path:
                 if not file_path.endswith(".json"):
                     file_path += ".json"
@@ -128,11 +138,11 @@ class ASTViewer(QMainWindow):
         if isinstance(node, ast.AST):
             label = type(node).__name__
             extra = []
-            if hasattr(node, 'name'):
+            if hasattr(node, "name"):
                 extra.append(f"name='{node.name}'")
-            elif hasattr(node, 'id'):
+            elif hasattr(node, "id"):
                 extra.append(f"id='{node.id}'")
-            elif hasattr(node, 'value'):
+            elif hasattr(node, "value"):
                 val = repr(node.value)
                 if len(val) > 30:
                     val = val[:27] + "..."
@@ -154,8 +164,6 @@ class ASTViewer(QMainWindow):
             return item
         else:
             return QTreeWidgetItem([repr(node)])
-
-
 
     def update_all(self):
         code = self.code_editor.toPlainText()
@@ -192,7 +200,9 @@ class ASTViewer(QMainWindow):
         try:
             serializable = ast_to_serializable(tree)
         except Exception as e:
-            self.result_output.setPlainText(f"Ошибка преобразования AST в сериализуемый формат:\n{e}")
+            self.result_output.setPlainText(
+                f"Ошибка преобразования AST в сериализуемый формат:\n{e}"
+            )
             return
 
         # 4. Вызываем пользовательскую проверку
@@ -200,8 +210,6 @@ class ASTViewer(QMainWindow):
 
         # 5. Выводим результат проверки
         self.result_output.setPlainText(str(check_result))
-
-
 
 
 def main():

@@ -51,11 +51,12 @@ def run_filestr(filepath):
     for line, raw in enumerate(content):
         result.append(
             {
-                'line': line + 1,
-                'raw': raw.strip('\n'),
+                "line": line + 1,
+                "raw": raw.strip("\n"),
             }
         )
     return result
+
 
 def update_reports_for_file(key, filepath):
     """
@@ -192,8 +193,8 @@ def index():
                         border = "border-success"
                         table = "table-success"
                     case ("LOW", "error"):
-                        border = "border-danger"                        
-                        table = "table-danger"                        
+                        border = "border-danger"
+                        table = "table-danger"
                     case ("LOW", "warning"):
                         border = "border-warning"
                         table = "table-warning"
@@ -210,11 +211,11 @@ def index():
                         border = "border-danger"
                         table = "table-danger"
                     case ("HIGH", None):
-                        border = "border-danger"        
-                        table = "table-danger"        
+                        border = "border-danger"
+                        table = "table-danger"
                     case ("LOW", None):
-                        border = "border-success"                                            
-                        table = "table-success"                                            
+                        border = "border-success"
+                        table = "table-success"
                     case _:
                         border = "border-secondary"
                         table = "table-secondary"
@@ -236,11 +237,21 @@ def index():
 
             progress_dct.update(
                 {
-                    "primary1": int(progress_dct.get("primary", 0) / progress_dct["total"] * 100),
-                    "warning1": int(progress_dct.get("warning", 0) / progress_dct["total"] * 100),
-                    "danger1": int(progress_dct.get("danger", 0) / progress_dct["total"] * 100),
-                    "secondary1": int(progress_dct.get("secondary", 0) / progress_dct["total"] * 100),
-                    "success1": int(progress_dct.get("success", 0) / progress_dct["total"] * 100),
+                    "primary1": int(
+                        progress_dct.get("primary", 0) / progress_dct["total"] * 100
+                    ),
+                    "warning1": int(
+                        progress_dct.get("warning", 0) / progress_dct["total"] * 100
+                    ),
+                    "danger1": int(
+                        progress_dct.get("danger", 0) / progress_dct["total"] * 100
+                    ),
+                    "secondary1": int(
+                        progress_dct.get("secondary", 0) / progress_dct["total"] * 100
+                    ),
+                    "success1": int(
+                        progress_dct.get("success", 0) / progress_dct["total"] * 100
+                    ),
                 }
             )
 

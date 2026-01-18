@@ -5,7 +5,7 @@ import sys
 import re
 from pathlib import Path
 from utils_ast import code_to_json
-from behoof import save_json
+from behoof import save_json, load_json
 
 
 def parse_vulture_text(output: str):

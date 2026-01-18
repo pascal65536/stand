@@ -1,17 +1,27 @@
-# gui_app.py - ПОЛНЫЙ КОД С ДВИЖУЩИМИСЯ РАЗДЕЛИТЕЛЯМИ
 import sys
 import ast
-import json
-import pprint
 
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
-    QTextEdit, QPushButton, QFileDialog, QTabWidget, QTableWidget, 
-    QTableWidgetItem, QSplitter, QCheckBox, QMessageBox, QFontDialog
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QTextEdit,
+    QPushButton,
+    QFileDialog,
+    QTabWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QSplitter,
+    QCheckBox,
+    QMessageBox,
+    QFontDialog,
 )
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtCore import Qt
 from feature import Feature, create_table
+
 
 class ASTViewer(QMainWindow):
     def __init__(self):
@@ -42,16 +52,26 @@ class ASTViewer(QMainWindow):
         checkboxes_widget = QWidget()
         checkboxes_layout = QVBoxLayout()
         checkboxes_layout.setSpacing(2)
-        
+
         self.cb_imports = QCheckBox("Импорты")
         self.cb_calls = QCheckBox("Вызовы")
         self.cb_functions = QCheckBox("Функции")
         self.cb_loops = QCheckBox("Циклы")
         self.cb_comps = QCheckBox("Comprehensions")
-        for cb in [self.cb_imports, self.cb_calls, self.cb_functions, self.cb_loops, self.cb_comps]:
+        for cb in [
+            self.cb_imports,
+            self.cb_calls,
+            self.cb_functions,
+            self.cb_loops,
+            self.cb_comps,
+        ]:
             cb.setFont(self.current_font)
-            cb.setChecked(True) 
-            cb.stateChanged.connect(lambda checked, cbx=cb: print(f"Checkbox: {cbx.text()} = {cbx.isChecked()}"))
+            cb.setChecked(True)
+            cb.stateChanged.connect(
+                lambda checked, cbx=cb: print(
+                    f"Checkbox: {cbx.text()} = {cbx.isChecked()}"
+                )
+            )
         checkboxes_layout.addWidget(self.cb_imports)
         checkboxes_layout.addWidget(self.cb_calls)
         checkboxes_layout.addWidget(self.cb_functions)
@@ -60,36 +80,36 @@ class ASTViewer(QMainWindow):
         checkboxes_layout.addStretch()
         checkboxes_widget.setLayout(checkboxes_layout)
         checkboxes_widget.setMaximumWidth(250)
-        
+
         self.ast_table = QTableWidget()
         self.ast_table.setColumnCount(2)
         self.ast_table.setHorizontalHeaderLabels(["AST Feature", "Код"])
         self.ast_table.horizontalHeader().setStretchLastSection(True)
         self.ast_table.setFont(self.current_font)
-        top_splitter.addWidget(left_panel)      
+        top_splitter.addWidget(left_panel)
         top_splitter.addWidget(checkboxes_widget)
-        top_splitter.addWidget(self.ast_table)    
-        top_splitter.setStretchFactor(0, 1)  
-        top_splitter.setStretchFactor(1, 0)  
-        top_splitter.setStretchFactor(2, 2)  
+        top_splitter.addWidget(self.ast_table)
+        top_splitter.setStretchFactor(0, 1)
+        top_splitter.setStretchFactor(1, 0)
+        top_splitter.setStretchFactor(2, 2)
         self.features_tabs = QTabWidget()
         self.features_tabs.setFont(self.current_font)
-        main_splitter.addWidget(top_splitter)      
+        main_splitter.addWidget(top_splitter)
         main_splitter.addWidget(self.features_tabs)
-        main_splitter.setStretchFactor(0, 4)  
-        main_splitter.setStretchFactor(1, 1)  
+        main_splitter.setStretchFactor(0, 4)
+        main_splitter.setStretchFactor(1, 1)
         main_layout.addWidget(main_splitter)
 
     def create_menu(self):
         """Создание верхнего меню"""
         menubar = self.menuBar()
-        
+
         file_menu = menubar.addMenu("Файл")
         open_action = QAction("Открыть...", self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.load_file)
         file_menu.addAction(open_action)
-        
+
         # save_action = QAction("Сохранить features...", self)
         # save_action.setShortcut("Ctrl+S")
         # save_action.triggered.connect(self.save_features)
@@ -100,7 +120,7 @@ class ASTViewer(QMainWindow):
         exit_action.setShortcut("Ctrl+Q")
         exit_action.triggered.connect(self.close)
         file_menu.addAction(exit_action)
-        
+
         font_menu = menubar.addMenu("Шрифт")
         font_dialog_action = QAction("Выбор шрифта...", self)
         font_dialog_action.setShortcut("Ctrl+F")
@@ -121,16 +141,23 @@ class ASTViewer(QMainWindow):
         Применить шрифт ко всем виджетам
         """
         widgets = [
-            self.code_editor, self.ast_table, self.features_tabs,
-            self.cb_imports, self.cb_calls, self.cb_functions,
-            self.cb_loops, self.cb_comps
+            self.code_editor,
+            self.ast_table,
+            self.features_tabs,
+            self.cb_imports,
+            self.cb_calls,
+            self.cb_functions,
+            self.cb_loops,
+            self.cb_comps,
         ]
         for widget in widgets:
             if widget:
                 widget.setFont(font)
 
     def load_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Выберите Python файл", "", "Python files (*.py)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Выберите Python файл", "", "Python files (*.py)"
+        )
         if not file_path:
             return
         try:
@@ -151,12 +178,14 @@ class ASTViewer(QMainWindow):
             self.code_lines = code.splitlines()
             self._feature_obj = Feature()
             self._feature_obj.visit(tree)
-            if hasattr(self._feature_obj, 'read_rows'):
+            if hasattr(self._feature_obj, "read_rows"):
                 self._feature_obj.read_rows(code)
             self.update_ast_table(self._feature_obj)
             self.update_features_tabs(self._feature_obj)
         except SyntaxError as e:
-            self.features_tabs.addTab(QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка")
+            self.features_tabs.addTab(
+                QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка"
+            )
         except Exception as e:
             self.features_tabs.addTab(QTextEdit(f"Ошибка анализа: {e}"), "Ошибка")
 
@@ -172,9 +201,9 @@ class ASTViewer(QMainWindow):
             self.ast_table.setRowCount(len(feature_obj.rows))
             for num, row in enumerate(feature_obj.rows):
                 code_dct = code_table.get(num + 1, dict())
-                code_line = ', '.join(list(code_dct.keys()))
-                self.ast_table.setItem(num, 0, QTableWidgetItem(str(code_line)))      
-                self.ast_table.setItem(num, 1, QTableWidgetItem(str(row)))      
+                code_line = ", ".join(list(code_dct.keys()))
+                self.ast_table.setItem(num, 0, QTableWidgetItem(str(code_line)))
+                self.ast_table.setItem(num, 1, QTableWidgetItem(str(row)))
         except:
             pass
         self.ast_table.resizeColumnsToContents()
@@ -198,6 +227,7 @@ class ASTViewer(QMainWindow):
             tab.setFont(self.current_font)
             tab.setReadOnly(True)
             self.features_tabs.addTab(tab, feature_name.replace("comp", "Comp"))
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

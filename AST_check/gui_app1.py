@@ -1,8 +1,5 @@
-# gui_app.py
 import sys
 import ast
-import json
-import pprint
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -62,7 +59,9 @@ class ASTViewer(QMainWindow):
         main_layout.addWidget(self.features_tabs, 1)
 
     def load_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Выберите файл", "", "Python files (*.py)")
+        file_path, _ = QFileDialog.getOpenFileName(
+            self, "Выберите файл", "", "Python files (*.py)"
+        )
         if not file_path:
             return
         try:
@@ -87,7 +86,9 @@ class ASTViewer(QMainWindow):
             self.update_ast_table(feature_obj)
             self.update_features_tabs(feature_obj)
         except SyntaxError as e:
-            self.features_tabs.addTab(QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка")
+            self.features_tabs.addTab(
+                QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка"
+            )
         except Exception as e:
             self.features_tabs.addTab(QTextEdit(f"Ошибка анализа: {e}"), "Ошибка")
 
@@ -107,12 +108,11 @@ class ASTViewer(QMainWindow):
         code_table = create_table(feature_obj.features)
         self.ast_table.setRowCount(len(feature_obj.rows))
         for num, row in enumerate(feature_obj.rows):
-            code_dct = code_table.get(num  + 1, dict())
-            code_line = ', '.join(list(code_dct.keys()))
-            self.ast_table.setItem(num, 0, QTableWidgetItem(code_line))      
-            self.ast_table.setItem(num, 1, QTableWidgetItem(row))      
+            code_dct = code_table.get(num + 1, dict())
+            code_line = ", ".join(list(code_dct.keys()))
+            self.ast_table.setItem(num, 0, QTableWidgetItem(code_line))
+            self.ast_table.setItem(num, 1, QTableWidgetItem(row))
         self.ast_table.resizeColumnsToContents()
-
 
     def update_features_tabs(self, feature_obj):
         """

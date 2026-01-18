@@ -1,7 +1,34 @@
-# feature.py
-
+from behoof import load_json, calculate_md5, save_json
 import ast
+import subprocess
+import json
+import re
 import pprint
+
+
+def create_table(extractor_features):
+    code_table = dict()
+
+    for feature_name, feature_list in extractor_features.items():
+        for item in feature_list:
+            result = dict()
+            if isinstance(item, dict):
+                result.update(item)
+                result.update({"name": feature_name})
+            elif isinstance(item, tuple):
+                result.update({"name": feature_name})
+                result.update({"subname": item[0]})
+                result.update({"line": item[1]})
+            else:
+                continue
+
+            line_num = result.get("line", 0)
+            line_name = result.get("name", "unknown")
+
+            code_table.setdefault(line_num, dict()).setdefault(line_name, list())
+            code_table[line_num][line_name].append(result)
+
+    return code_table
 
 
 class Feature(ast.NodeVisitor):
@@ -122,38 +149,282 @@ class Feature(ast.NodeVisitor):
     def read_rows(self, code_str):
         self.rows = [row for row in code_str.splitlines()]
 
-def create_table(extractor_features):
-    code_table = dict()
 
-    for feature_name, feature_list in extractor_features.items():
-        for item in feature_list:
-            result = dict()
-            if isinstance(item, dict):
-                result.update(item)
-                result.update({"name": feature_name})
-            elif isinstance(item, tuple):
-                result.update({"name": feature_name})
-                result.update({"subname": item[0]})
-                result.update({"line": item[1]})
-            else:
+class Checker:
+    def __init__(self, filepath):
+        self.filepath = filepath
+        self.cmd = []
+        self.errors = []
+
+    def run(self):
+        if not self.cmd:
+            return list()
+        result = subprocess.run(self.cmd, capture_output=True, text=True)
+        return self.parse(result.stdout)
+
+    def parse(self, result):
+        return json.loads(result)
+
+    def line(self, lines_dct):
+        return lines_dct
+
+
+class ASTChecker(Checker):
+    name = "ast"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = []
+        self.errors = self.errors or self.run()        
+
+    def run(self):
+        with open(self.filepath, "r") as f:
+            code_str = f.read()
+        tree = ast.parse(code_str)
+        extractor = Feature()
+        extractor.read_rows(code_str)
+        extractor.visit(tree)
+        return extractor.features
+
+    def line(self, lines_dct):
+        for key, value in self.errors.items():
+            for name, line_no in value:
+                this = {
+                    "key": key,
+                    "name": name.strip(),
+                }
+                lines_dct.setdefault(line_no, dict()).setdefault(self.name, list())
+                lines_dct[line_no][self.name].append(this)
+        return lines_dct
+
+class MyPyChecker(Checker):
+    name = "mypy"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["mypy", filepath, "--output=json"]
+        self.errors = self.errors or self.run()
+
+    def parse(self, result):
+        self.errors = [json.loads(line) for line in result.split("\n") if line.strip()]
+        return self.errors
+
+    def line(self, lines_dct):
+        for line in self.errors:
+            this = {
+                "hint": line["hint"],
+                "severity": line["severity"],
+                "message": line["message"],
+                "code": line["code"],
+                "column": line["column"],
+            }
+            lines_dct.setdefault(line["line"], dict()).setdefault(self.name, list())
+            lines_dct[line["line"]][self.name].append(this)
+        return lines_dct
+
+
+class Flake8Checker(Checker):
+    name = "flake8"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["flake8", filepath, "--format=json"]
+        self.errors = self.errors or self.run()
+
+    def line(self, lines_dct):
+        for key in self.errors:
+            for line in self.errors[key]:
+                this = {
+                    "message": line["text"],
+                    "code": line["code"],
+                    "column": line["column_number"],
+                    "physical": line["physical_line"].rstrip(),
+                }
+                lines_dct.setdefault(line["line_number"], dict()).setdefault(
+                    self.name, list()
+                )
+                lines_dct[line["line_number"]][self.name].append(this)
+        return lines_dct
+
+
+class PylintChecker(Checker):
+    name = "pylint"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["pylint", filepath, "--output-format=json"]
+        self.errors = self.errors or self.run()
+
+    def line(self, lines_dct):
+        for line in self.errors:
+            this = {
+                "message": line["message"],
+                "code": line["message-id"],
+                "symbol": line["symbol"],
+                "type": line["type"],
+                "column": line["column"],
+                "obj": line["obj"],
+                "endColumn": line["endColumn"],
+                "endLine": line["endLine"],
+            }
+            lines_dct.setdefault(line["line"], dict()).setdefault(self.name, list())
+            lines_dct[line["line"]][self.name].append(this)
+        return lines_dct
+
+
+class BanditChecker(Checker):
+    name = "bandit"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["bandit", "-f", "json", "-r", filepath]
+        self.errors = self.errors or self.run()
+
+    def line(self, lines_dct):
+        for line in self.errors.get("results", list()):
+            this = {
+                "message": line["issue_text"],
+                "code": line["test_id"],
+                "column": line["col_offset"],
+                "issue_confidence": line["issue_confidence"],
+                "end_col_offset": line["end_col_offset"],
+                "physical": line["code"],
+                "issue_cwe": line["issue_cwe"],
+                "issue_severity": line["issue_severity"],
+                "line_range": line["line_range"],
+                "more_info": line["more_info"],
+                "test_name": line["test_name"],
+            }
+            lines_dct.setdefault(line["line_number"], dict()).setdefault(
+                self.name, list()
+            )
+            lines_dct[line["line_number"]][self.name].append(this)
+        return lines_dct
+
+
+class RadonChecker(Checker):
+    name = "radon"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["radon", "cc", self.filepath, "-s", "-j"]
+        self.errors = self.errors or self.run()
+
+    def line(self, lines_dct):
+        for key in self.errors:
+            for line in self.errors[key]:
+                this = {
+                    "type": line["type"],
+                    "rank": line["rank"],
+                    "column": line["col_offset"],
+                    "name": line["name"],
+                    "end_col_offset": line.get("end_col_offset"),
+                    "classname": line.get("classname"),
+                    "closures": line.get("closures"),
+                    "endline": line["endline"],
+                    "complexity": line["complexity"],
+                }
+                lines_dct.setdefault(line["lineno"], dict()).setdefault(
+                    self.name, list()
+                )
+                lines_dct[line["lineno"]][self.name].append(this)
+        return lines_dct
+
+
+class VultureChecker(Checker):
+    name = "vulture"
+
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["vulture", filepath, "--min-confidence", "0"]
+        self.errors = self.errors or self.run()
+
+    def line(self, lines_dct):
+        for line in self.errors:
+            this = {
+                "message": line["message"],
+                "confidence": line["confidence"],
+            }
+            lines_dct.setdefault(line["line"], dict()).setdefault(self.name, list())
+            lines_dct[line["line"]][self.name].append(this)
+        return lines_dct
+
+    def parse(self, result):
+        errors = []
+        for line in result.strip().split("\n"):
+            if not line:
                 continue
+            line = line.replace("'", ":")
+            line = line.replace("(", ":")
+            line = line.replace(")", ":")
+            _, line_no, msg, name, _, confidence, _ = line.split(":")
+            errors.append(
+                {
+                    "line": int(line_no),
+                    "message": f"{msg.strip().capitalize()}: '{name}'",
+                    "confidence": confidence,
+                }
+            )
+        return errors
 
-            line_num = result.get("line", 0)
-            line_name = result.get("name", "unknown")
 
-            code_table.setdefault(line_num, dict()).setdefault(line_name, list())
-            code_table[line_num][line_name].append(result)
+class PyCodeStyleChecker(Checker):
+    name = "pycodestyle"
 
-    return code_table
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.cmd = ["pycodestyle", filepath]
+        self.errors = self.errors or self.run()
+
+    def line(self, lines_dct):
+        for line in self.errors:
+            this = {
+                "message": line["message"],
+            }
+            lines_dct.setdefault(line["line"], dict()).setdefault(self.name, list())
+            lines_dct[line["line"]][self.name].append(this)
+        return lines_dct
+
+    def parse(self, result):
+        errors = []
+        for line in result.strip().split("\n"):
+            if not line:
+                continue
+            match = re.match(r"^(.+?):(\d+):\s*(.*?)\s*(?:\(\d+% confidence\))?$", line)
+            if match:
+                _, line_no, message = match.groups()
+                errors.append({"line": int(line_no), "message": message.strip()})
+        return errors
+
 
 if __name__ == "__main__":
-    with open("AST_check/user_fld.py", "r") as f:
-        code_str = f.read()
-    tree = ast.parse(code_str)
-    extractor = Feature()
-    extractor.read_rows(code_str)
-    extractor.visit(tree)
+    filename = "code_analyser_practice_job/my_script.py"
 
-    code_table = create_table(extractor.features)
-    pprint.pprint(code_table)
+    md5_file = calculate_md5(filename)
+
+    lines_dct = dict()
+    radon = PyCodeStyleChecker(filename)
+    lines_dct = radon.line(lines_dct)
+
+    radon = VultureChecker(filename)
+    lines_dct = radon.line(lines_dct)    
+
+    radon = RadonChecker(filename)
+    lines_dct = radon.line(lines_dct)    
+
+    radon = BanditChecker(filename)
+    lines_dct = radon.line(lines_dct)    
+
+    radon = PylintChecker(filename)
+    lines_dct = radon.line(lines_dct)    
     
+    radon = Flake8Checker(filename)
+    lines_dct = radon.line(lines_dct)   
+
+    radon = MyPyChecker(filename)
+    lines_dct = radon.line(lines_dct)  
+
+    radon = ASTChecker(filename)
+    lines_dct = radon.line(lines_dct)  
+
+    save_json('data', 'lines.json', lines_dct)

@@ -1,12 +1,11 @@
-from behoof import load_json, calculate_md5, save_json
+from behoof import load_json, save_json
 import ast
 import subprocess
 import json
 import re
-import pprint
 
 
-def create_table(extractor_features):
+def create_table1(extractor_features):
     code_table = dict()
 
     for feature_name, feature_list in extractor_features.items():
@@ -404,12 +403,45 @@ class PyCodeStyleChecker(Checker):
         return errors
 
 
-if __name__ == "__main__":
-    filename = "code_analyser_practice_job/my_script.py"
+class CodeChecker(Checker):
+    name = "code"
 
-    md5_file = calculate_md5(filename)
+    def __init__(self, filepath):
+        super().__init__(filepath)
+        self.errors = self.errors or self.run()
+
+    def run(self):
+        with open(self.filepath, "r") as f:
+            code_str = f.read()
+        result = dict()
+        for num, line in enumerate(code_str.splitlines(), 1):
+            result[num] = {
+                "name": self.name,
+                "line": num,
+                "physical": line.rstrip(),
+            }
+        return self.parse(json.dumps(result))
+
+    def parse(self, result):
+        return json.loads(result)
+
+    def line(self, lines_dct):
+        for num, line in self.errors.items():
+            this = {
+                "physical": line["physical"],
+            }
+            lines_dct.setdefault(int(num), dict()).setdefault(self.name, list())
+            lines_dct[int(num)][self.name].append(this)
+        return lines_dct
+
+
+def check_all(filename):
+    # md5_file = calculate_md5(filename)
 
     lines_dct = dict()
+    radon = CodeChecker(filename)
+    lines_dct = radon.line(lines_dct)
+
     radon = PyCodeStyleChecker(filename)
     lines_dct = radon.line(lines_dct)
 
@@ -434,4 +466,12 @@ if __name__ == "__main__":
     radon = ASTChecker(filename)
     lines_dct = radon.line(lines_dct)
 
+    return lines_dct
+
+
+if __name__ == "__main__":
+    filename = "code_analyser_practice_job/my_script.py"
+    lines_dct = check_all(filename)
     save_json("data", "lines.json", lines_dct)
+    # lines_dct = load_json("data", "lines.json")
+    # create_table(lines_dct)

@@ -1,5 +1,6 @@
 import sys
 import ast
+import os
 
 from PyQt6.QtWidgets import (
     QApplication,
@@ -20,8 +21,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtCore import Qt
-from feature import Feature, create_table
-from behoof import load_json
+from feature import check_all
 
 
 class ASTViewer(QMainWindow):
@@ -31,7 +31,6 @@ class ASTViewer(QMainWindow):
         self.resize(1600, 1000)
         self.code_lines = []
         self.current_font = QFont("Consolas", 10)
-        self._feature_obj = None
         self.create_menu()
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -165,34 +164,23 @@ class ASTViewer(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", f"Ошибка загрузки: {e}")
 
-    def update_ast_table(self, feature_obj):
-        print('-' * 80)
-        lint_data = load_json("data", "lines.json")
-        print(lint_data)
-
+    def update_ast_table(self, lint_data):
         self.ast_table.setRowCount(0)
         code_table = {}
-        for line_str, issues in lint_data.items():
-            print(line_str)
-            print(issues)
-            print()
+        row_count = 3
+        for line_str, line_dct in lint_data.items():
             line_num = int(line_str)
-            messages = set()
-            for tool, reports in issues.items():
-                for report in reports:
-                    if "message" in report:
-                        messages.add(report["message"])
-                    elif "physical" in report:
-                        pass
-            if messages:
-                code_table[line_num] = {msg: True for msg in messages}
+            code_table[line_num] = [[] for _ in range(row_count)]
+            # code_table[line_num][0] = line_str
+            physical = ""
+            for physical_dct in line_dct.get("code"):
+                physical = physical_dct.get("physical", "")
+            code_table[line_num][1] = physical
 
-        all_lines_with_issues = sorted(code_table.keys())
-        self.ast_table.setRowCount(len(all_lines_with_issues))
-        for idx, line_num in enumerate(all_lines_with_issues):
-            msg_text = "; ".join(sorted(code_table[line_num].keys()))
-            self.ast_table.setItem(idx, 0, QTableWidgetItem(str(line_num)))
-            self.ast_table.setItem(idx, 1, QTableWidgetItem(msg_text))
+        self.ast_table.setRowCount(len(code_table.keys()))
+        for idx in sorted(code_table.keys()):
+            for num, line in enumerate(code_table[idx]):
+                self.ast_table.setItem(idx - 1, num, QTableWidgetItem(str(line)))
         self.ast_table.resizeColumnsToContents()
 
     def clear_all(self):
@@ -226,21 +214,23 @@ class ASTViewer(QMainWindow):
         if not code.strip():
             self.features_tabs.addTab(QTextEdit("Пустой исходный код."), "Результат")
             return
+
+        os.makedirs("data", exist_ok=True)
+        codepath = os.path.join("data", "code.py")
+        with open(codepath, "w") as f:
+            f.write(code)
+
         try:
-            tree = ast.parse(code)
-            self.code_lines = code.splitlines()
-            self._feature_obj = Feature()
-            self._feature_obj.visit(tree)
-            if hasattr(self._feature_obj, "read_rows"):
-                self._feature_obj.read_rows(code)
-            self.update_ast_table(self._feature_obj)
-            self.update_features_tabs(self._feature_obj)
+            feature = check_all(codepath)
+            self.update_ast_table(feature)
+            self.update_features_tabs(feature)
         except SyntaxError as e:
             self.features_tabs.addTab(
                 QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка"
             )
         except Exception as e:
             self.features_tabs.addTab(QTextEdit(f"Ошибка анализа: {e}"), "Ошибка")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

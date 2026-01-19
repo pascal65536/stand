@@ -175,7 +175,7 @@ class ASTChecker(Checker):
     def __init__(self, filepath):
         super().__init__(filepath)
         self.cmd = []
-        self.errors = self.errors or self.run()        
+        self.errors = self.errors or self.run()
 
     def run(self):
         with open(self.filepath, "r") as f:
@@ -189,13 +189,20 @@ class ASTChecker(Checker):
     def line(self, lines_dct):
         for key, value in self.errors.items():
             for name, line_no in value:
+                msg = None
+                if key == "name" and len(name) == 1:
+                    msg = "Односимвольные переменные запрещены"
+                if not msg:
+                    continue
                 this = {
                     "key": key,
                     "name": name.strip(),
+                    "message": msg,
                 }
                 lines_dct.setdefault(line_no, dict()).setdefault(self.name, list())
                 lines_dct[line_no][self.name].append(this)
         return lines_dct
+
 
 class MyPyChecker(Checker):
     name = "mypy"
@@ -407,24 +414,24 @@ if __name__ == "__main__":
     lines_dct = radon.line(lines_dct)
 
     radon = VultureChecker(filename)
-    lines_dct = radon.line(lines_dct)    
+    lines_dct = radon.line(lines_dct)
 
     radon = RadonChecker(filename)
-    lines_dct = radon.line(lines_dct)    
+    lines_dct = radon.line(lines_dct)
 
     radon = BanditChecker(filename)
-    lines_dct = radon.line(lines_dct)    
+    lines_dct = radon.line(lines_dct)
 
     radon = PylintChecker(filename)
-    lines_dct = radon.line(lines_dct)    
-    
+    lines_dct = radon.line(lines_dct)
+
     radon = Flake8Checker(filename)
-    lines_dct = radon.line(lines_dct)   
+    lines_dct = radon.line(lines_dct)
 
     radon = MyPyChecker(filename)
-    lines_dct = radon.line(lines_dct)  
+    lines_dct = radon.line(lines_dct)
 
     radon = ASTChecker(filename)
-    lines_dct = radon.line(lines_dct)  
+    lines_dct = radon.line(lines_dct)
 
-    save_json('data', 'lines.json', lines_dct)
+    save_json("data", "lines.json", lines_dct)

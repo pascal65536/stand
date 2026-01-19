@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QFont, QAction
 from PyQt6.QtCore import Qt
 from feature import Feature, create_table
+from behoof import load_json
 
 
 class ASTViewer(QMainWindow):
@@ -112,11 +113,6 @@ class ASTViewer(QMainWindow):
         open_action.triggered.connect(self.load_file)
         file_menu.addAction(open_action)
 
-        # save_action = QAction("Сохранить features...", self)
-        # save_action.setShortcut("Ctrl+S")
-        # save_action.triggered.connect(self.save_features)
-        # file_menu.addAction(save_action)
-
         file_menu.addSeparator()
         exit_action = QAction("Выход", self)
         exit_action.setShortcut("Ctrl+Q")
@@ -169,46 +165,40 @@ class ASTViewer(QMainWindow):
         except Exception as e:
             QMessageBox.warning(self, "Ошибка", f"Ошибка загрузки: {e}")
 
-    def update_all(self):
-        code = self.code_editor.toPlainText()
-        self.clear_all()
-        if not code.strip():
-            self.features_tabs.addTab(QTextEdit("Пустой исходный код."), "Результат")
-            return
-        try:
-            tree = ast.parse(code)
-            self.code_lines = code.splitlines()
-            self._feature_obj = Feature()
-            self._feature_obj.visit(tree)
-            if hasattr(self._feature_obj, "read_rows"):
-                self._feature_obj.read_rows(code)
-            self.update_ast_table(self._feature_obj)
-            self.update_features_tabs(self._feature_obj)
-        except SyntaxError as e:
-            self.features_tabs.addTab(
-                QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка"
-            )
-        except Exception as e:
-            self.features_tabs.addTab(QTextEdit(f"Ошибка анализа: {e}"), "Ошибка")
+    def update_ast_table(self, feature_obj):
+        print('-' * 80)
+        lint_data = load_json("data", "lines.json")
+        print(lint_data)
+
+        self.ast_table.setRowCount(0)
+        code_table = {}
+        for line_str, issues in lint_data.items():
+            print(line_str)
+            print(issues)
+            print()
+            line_num = int(line_str)
+            messages = set()
+            for tool, reports in issues.items():
+                for report in reports:
+                    if "message" in report:
+                        messages.add(report["message"])
+                    elif "physical" in report:
+                        pass
+            if messages:
+                code_table[line_num] = {msg: True for msg in messages}
+
+        all_lines_with_issues = sorted(code_table.keys())
+        self.ast_table.setRowCount(len(all_lines_with_issues))
+        for idx, line_num in enumerate(all_lines_with_issues):
+            msg_text = "; ".join(sorted(code_table[line_num].keys()))
+            self.ast_table.setItem(idx, 0, QTableWidgetItem(str(line_num)))
+            self.ast_table.setItem(idx, 1, QTableWidgetItem(msg_text))
+        self.ast_table.resizeColumnsToContents()
 
     def clear_all(self):
         self.ast_table.setRowCount(0)
         while self.features_tabs.count():
             self.features_tabs.removeTab(0)
-
-    def update_ast_table(self, feature_obj):
-        self.ast_table.setRowCount(0)
-        try:
-            code_table = create_table(feature_obj.features)
-            self.ast_table.setRowCount(len(feature_obj.rows))
-            for num, row in enumerate(feature_obj.rows):
-                code_dct = code_table.get(num + 1, dict())
-                code_line = ", ".join(list(code_dct.keys()))
-                self.ast_table.setItem(num, 0, QTableWidgetItem(str(code_line)))
-                self.ast_table.setItem(num, 1, QTableWidgetItem(str(row)))
-        except:
-            pass
-        self.ast_table.resizeColumnsToContents()
 
     def update_features_tabs(self, feature_obj):
         for feature_name, feature_data in feature_obj.features.items():
@@ -230,6 +220,27 @@ class ASTViewer(QMainWindow):
             tab.setReadOnly(True)
             self.features_tabs.addTab(tab, feature_name.replace("comp", "Comp"))
 
+    def update_all(self):
+        code = self.code_editor.toPlainText()
+        self.clear_all()
+        if not code.strip():
+            self.features_tabs.addTab(QTextEdit("Пустой исходный код."), "Результат")
+            return
+        try:
+            tree = ast.parse(code)
+            self.code_lines = code.splitlines()
+            self._feature_obj = Feature()
+            self._feature_obj.visit(tree)
+            if hasattr(self._feature_obj, "read_rows"):
+                self._feature_obj.read_rows(code)
+            self.update_ast_table(self._feature_obj)
+            self.update_features_tabs(self._feature_obj)
+        except SyntaxError as e:
+            self.features_tabs.addTab(
+                QTextEdit(f"Синтаксическая ошибка: {e}"), "Ошибка"
+            )
+        except Exception as e:
+            self.features_tabs.addTab(QTextEdit(f"Ошибка анализа: {e}"), "Ошибка")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

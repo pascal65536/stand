@@ -470,7 +470,7 @@ def check_all(filename):
 
 
 if __name__ == "__main__":
-    filename = "code_analyser_practice_job/my_script.py"
+    filename = "_user_re.py"
     lines_dct = check_all(filename)
     save_json("data", "lines.json", lines_dct)
     # lines_dct = load_json("data", "lines.json")

@@ -116,21 +116,21 @@ class Feature(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_ListComp(self, node):
-        elt_str = (
-            node.elt.id
-            if isinstance(node.elt, ast.Name)
-            else (
-                str(ast.unparse(node.elt)) if hasattr(ast, "unparse") else str(node.elt)
-            )
-        )
-
-        info = {
-            "line": getattr(node, "lineno", "unknown"),
-            "elt": elt_str,
-            "generators": len(node.generators),
-            "ifs_count": sum(len(gen.ifs) for gen in node.generators),
-        }
-        self.features["listcomp"].append(info)
+        # elt_str = (
+        #     node.elt.id
+        #     if isinstance(node.elt, ast.Name)
+        #     else (
+        #         str(ast.unparse(node.elt)) if hasattr(ast, "unparse") else str(node.elt)
+        #     )
+        # )
+        # info = {
+        #     "line": getattr(node, "lineno", "unknown"),
+        #     "elt": elt_str,
+        #     "generators": len(node.generators),
+        #     "ifs_count": sum(len(gen.ifs) for gen in node.generators),
+        # }
+        # self.features["listcomp"].append(info)
+        self.features["listcomp"].append(("list_comprehension", node.lineno))
         self.generic_visit(node)
 
     def visit_SetComp(self, node):

@@ -30,7 +30,7 @@ def create_table1(extractor_features):
     return code_table
 
 
-class Feature(ast.NodeVisitor):
+class Visitor(ast.NodeVisitor):
     def __init__(self):
         self.rows = []
         self.assignments = []
@@ -180,10 +180,10 @@ class ASTChecker(Checker):
         with open(self.filepath, "r") as f:
             code_str = f.read()
         tree = ast.parse(code_str)
-        extractor = Feature()
-        extractor.read_rows(code_str)
-        extractor.visit(tree)
-        return extractor.features
+        visitor = Visitor()
+        visitor.read_rows(code_str)
+        visitor.visit(tree)
+        return visitor.features
 
     def line(self, lines_dct):
         for key, value in self.errors.items():

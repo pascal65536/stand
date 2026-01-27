@@ -1,0 +1,10 @@
+colorama==0.4.6
+flake8==7.3.0
+# Editable install with no version control (flake8-myplugin==0.1.0)
+-e /home/pascal65536/git/flake8-myplugin
+mando==0.7.1
+mccabe==0.7.0
+pycodestyle==2.14.0
+pyflakes==3.4.0
+radon==6.0.1
+six==1.17.0

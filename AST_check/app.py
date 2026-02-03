@@ -197,15 +197,15 @@ class CodeCheckerApp(QMainWindow):
         for row, line_text in enumerate(self.code_lines):
             line_num = row + 1
 
-            # Колонка 0: Код ошибки (была 1)
+            # Колонка 0: Код ошибки
             code_item = QTableWidgetItem("")
             self.results_table.setItem(row, 0, code_item)
 
-            # Колонка 1: Строка кода (была 2)
+            # Колонка 1: Строка кода
             code_line_item = QTableWidgetItem(line_text or "")
             self.results_table.setItem(row, 1, code_line_item)
 
-            # Колонка 2: Ошибка (была 3)
+            # Колонка 2: Ошибка
             errors = self.errors_by_line.get(line_num, [])
             if errors:
                 codes = []

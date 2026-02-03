@@ -19,7 +19,6 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QColor
 from collections import defaultdict
-from rules import EDUCATIONAL_RULES
 from edu import apply_rule, ast_to_serializable, ASTJSONAnalyzer
 from behoof import load_json, save_json
 
@@ -137,6 +136,7 @@ class CodeCheckerApp(QMainWindow):
             QMessageBox.warning(self, "Предупреждение", "Введите код для анализа!")
             return
 
+        educational_rules = load_json('data', 'rules.json')
         try:
             self.statusBar().showMessage("Анализируем...")
             self.analyze_btn.setEnabled(False)
@@ -150,7 +150,7 @@ class CodeCheckerApp(QMainWindow):
             self.analyzer.analyze(ast_json)
 
             all_errors = []
-            for rule in EDUCATIONAL_RULES:
+            for rule in educational_rules:
                 rule_errors = apply_rule(self.analyzer.context, rule)
                 all_errors.extend(rule_errors)
 

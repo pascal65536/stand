@@ -2,6 +2,7 @@ import ast
 import pprint
 from behoof import load_json, save_json
 from collections import defaultdict
+from rules import EDUCATIONAL_RULES as rules
 
 
 def ast_to_serializable(node):
@@ -338,42 +339,28 @@ def apply_rule(analysis_dict, rule):
 
 
 if __name__ == "__main__":
-    # Тестирование сериализации AST
     filepath = "ast_checker_sample.py"
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            test_code = f.read()
-        tree = ast.parse(test_code)
-        serialized = ast_to_serializable(tree)
-        save_json("data", "ast.json", serialized)
+    with open(filepath, "r", encoding="utf-8") as f:
+        test_code = f.read()
+    tree = ast.parse(test_code)
+    serialized = ast_to_serializable(tree)
+    save_json("data", "ast.json", serialized)
 
-        loaded = load_json("data", "ast.json")
-        restored_tree = serializable_to_ast(loaded)
-        ast.fix_missing_locations(restored_tree)
-        restored_code = ast.unparse(restored_tree)
-        print("Восстановленный код:")
-        print(restored_code)
-        print("\n" + "=" * 50 + "\n")
-    except FileNotFoundError:
-        print("Файл ast_checker_sample.py не найден, пропускаем тест сериализации")
+    loaded = load_json("data", "ast.json")
+    restored_tree = serializable_to_ast(loaded)
+    ast.fix_missing_locations(restored_tree)
+    restored_code = ast.unparse(restored_tree)
+    print("Восстановленный код:")
+    print(restored_code)
+    print("\n" + "=" * 50 + "\n")
 
-    # Тестирование анализатора
-    try:
-        sample_json = load_json("data", "ast.json")
-        analyzer = ASTJSONAnalyzer()
-        analyzer.analyze(sample_json)
+    sample_json = load_json("data", "ast.json")
+    analyzer = ASTJSONAnalyzer()
+    analyzer.analyze(sample_json)
 
-        try:
-            from rules import EDUCATIONAL_RULES as rules
-        except ImportError:
-            print("Файл rules.py не найден, пропускаем применение правил")
-            rules = []
-
-        print("Результаты анализа:")
-        for rule in rules:
-            errors = apply_rule(analyzer.context, rule)
-            if errors:
-                pprint.pprint(errors)
-                print()
-    except Exception as e:
-        print(f"Ошибка при анализе: {e}")
+    print("Результаты анализа:")
+    for rule in rules:
+        errors = apply_rule(analyzer.context, rule)
+        if errors:
+            pprint.pprint(errors)
+            print()

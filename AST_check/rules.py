@@ -1,5 +1,4 @@
 EDUCATIONAL_RULES = [
-    # Имена переменных
     {
         "target": "store_vars",
         "check": "name",
@@ -24,11 +23,10 @@ EDUCATIONAL_RULES = [
         "code": "EDU-VAR-003",
         "severity": "medium",
     },
-    # Импорты
     {
         "target": "imports",
         "check": "name",
-        "condition": "'re' in name",
+        "condition": "'re' == name",
         "message": "Запрещённый модуль 're' (регулярные выражения) в учебном задании",
         "code": "EDU-IMP-001",
         "severity": "medium",
@@ -41,7 +39,6 @@ EDUCATIONAL_RULES = [
         "code": "EDU-IMP-002",
         "severity": "high",
     },
-    # Вызовы функций
     {
         "target": "function_calls",
         "check": "name",
@@ -50,7 +47,6 @@ EDUCATIONAL_RULES = [
         "code": "EDU-CALL-001",
         "severity": "critical",
     },
-    # Классы
     {
         "target": "class_names",
         "check": "name",
@@ -59,7 +55,6 @@ EDUCATIONAL_RULES = [
         "code": "EDU-CLS-001",
         "severity": "medium",
     },
-    # Структурные ограничения
     {
         "target": "genexp",
         "check": "absent",
@@ -76,25 +71,14 @@ EDUCATIONAL_RULES = [
         "code": "EDU-STRUCT-002",
         "severity": "medium",
     },
-    # Тип 1: Проверка имён элементов коллекций (переменные, функции, классы, импорты)
     {
-        "target": "store_vars",  # ← ключ словаря для анализа
-        "check": "name",  # ← что проверять: "name" | "lines" | "count"
-        "condition": "len(name) == 1",  # ← Python-выражение с переменной {name}
+        "target": "store_vars",
+        "check": "name",
+        "condition": "len(name) == 1",
         "message": "Односимвольное имя переменной '{name}' в строках {lines}",
         "code": "R001",
         "severity": "high",
     },
-    # Тип 2: Проверка содержимого импортов
-    {
-        "target": "imports",
-        "check": "name",
-        "condition": "'re' in name",
-        "message": "Запрещённый модуль в импорте: {name}",
-        "code": "R021",
-        "severity": "medium",
-    },
-    # Тип 3: Проверка вызовов функций
     {
         "target": "function_calls",
         "check": "name",
@@ -103,7 +87,6 @@ EDUCATIONAL_RULES = [
         "code": "R032",
         "severity": "critical",
     },
-    # Тип 4: Структурная проверка классов
     {
         "target": "class_names",
         "check": "name",
@@ -112,20 +95,18 @@ EDUCATIONAL_RULES = [
         "code": "R011",
         "severity": "medium",
     },
-    # Тип 5: Проверка количества использований (редкость/избыточность)
     {
         "target": "load_vars",
-        "check": "count",  # ← проверка количества строк использования
+        "check": "count",
         "condition": "count == 1",
         "message": "Переменная '{name}' используется только один раз (строка {lines})",
         "code": "R050",
         "severity": "low",
     },
-    # Тип 6: Проверка отсутствия ключа (генераторные выражения)
     {
-        "target": "genexp",  # ← ключ, которого не должно быть
-        "check": "absent",  # ← "absent" = ключ отсутствует в словаре
-        "condition": "True",  # ← всегда выполняется для absent-проверок
+        "target": "genexp",
+        "check": "absent",
+        "condition": "True",
         "message": "Генераторные выражения запрещены",
         "code": "R031",
         "severity": "high",

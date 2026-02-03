@@ -388,9 +388,12 @@ if __name__ == "__main__":
     analyzer = ASTJSONAnalyzer()
     analyzer.analyze(sample_json)
 
-    import pprint
-
-    pprint.pprint(analyzer.context)
+    # import pprint, json
+    # analyzer_context = dict()
+    # for k, v in analyzer.context.items():
+    #     analyzer_context[k] = dict(v)
+    # pprint.pprint(analyzer.context)
+    # save_json("data", "analyzer.json", analyzer.context)
 
     # print("Результаты анализа:")
     rules = load_json("data", "rules.json")

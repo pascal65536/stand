@@ -1,6 +1,50 @@
+import ast
 import pprint
-from behoof import load_json
+from behoof import load_json, save_json
 from collections import defaultdict
+
+
+def ast_to_serializable(node):
+    """
+    Рекурсивно преобразует AST в сериализуемую структуру с сохранением позиций
+    """
+    if isinstance(node, ast.AST):
+        result = {"_type": type(node).__name__}
+        if hasattr(node, "lineno"):
+            result["lineno"] = node.lineno
+        if hasattr(node, "col_offset"):
+            result["col_offset"] = node.col_offset
+        for field in node._fields:
+            value = getattr(node, field)
+            result[field] = ast_to_serializable(value)
+        return result
+    elif isinstance(node, list):
+        return [ast_to_serializable(item) for item in node]
+    else:
+        return node
+
+
+def serializable_to_ast(data):
+    """
+    Рекурсивно преобразует сериализуемую структуру обратно в AST
+    """
+    if isinstance(data, dict) and "_type" in data:
+        node_type = data["_type"]
+        node_class = getattr(ast, node_type)
+        kwargs = {}
+        for field in node_class._fields:
+            if field in data:
+                kwargs[field] = serializable_to_ast(data[field])
+        node = node_class(**kwargs)
+        if "lineno" in data:
+            node.lineno = data["lineno"]
+        if "col_offset" in data:
+            node.col_offset = data["col_offset"]
+        return node
+    elif isinstance(data, list):
+        return [serializable_to_ast(item) for item in data]
+    else:
+        return data
 
 
 class ProgrammingError:
@@ -138,7 +182,6 @@ class ASTJSONAnalyzer:
         self.errors = []
         self.collect_context(ast_json)
         self.apply_rules(ast_json)
-        # return sorted(self.errors, key=lambda e: (e.lineno, e.rule_id))
         return self.errors
 
     def collect_context(self, node):
@@ -156,10 +199,10 @@ class ASTJSONAnalyzer:
                     module = node.get("module")
                     if module:
                         self.context["imports"][module].add(lineno)
-                    for name in node.get("names", list()):
+                    for name in node.get("names", []):
                         module_key = f"{module}.{name['name']}"
                         module_lineno = name.get("lineno", 0)
-                        module_asname = name["asname"]
+                        module_asname = name.get("asname")
                         self.context["import_from"][module_key].add(module_lineno)
                         if module_asname:
                             mak = f"{module}.{name['name']} as {module_asname}"
@@ -167,14 +210,14 @@ class ASTJSONAnalyzer:
                 case "Import":
                     for alias in node.get("names", []):
                         module = alias.get("name")
-                        lineno = node.get("lineno", 0)
-                        key = "imports"
-                        self.context[key][module].add(lineno)
+                        if module:
+                            self.context["imports"][module].add(lineno)
                 case "Name":
                     var_name = node.get("id")
                     ctx = node.get("ctx", {}).get("_type")
-                    key = f"{ctx.lower()}_vars"
-                    self.context[key][var_name].add(lineno)
+                    if ctx:
+                        key = f"{ctx.lower()}_vars"
+                        self.context[key][var_name].add(lineno)
                 case "Call":
                     func_node = node.get("func", {})
                     if func_node.get("_type") == "Name":
@@ -185,19 +228,16 @@ class ASTJSONAnalyzer:
                         self.context["function_calls"][func_name].add(lineno)
                 case "Assign":
                     targets = node.get("targets", [])
-                    for value in targets:
-                        self.collect_context(value)
+                    for target in targets:
+                        self.collect_context(target)
                 case "FunctionDef":
                     func_name = node.get("name", "<anonymous>")
                     self.context["function_names"][func_name].add(lineno)
                     self.context["scope_stack"].append(f"function:{func_name}")
                     self.context["current_scope"] = f"function:{func_name}"
-
                     for item in node.get("body", []):
                         self.collect_context(item)
-
                     self.context["scope_stack"].pop()
-
                     cs = "global"
                     if self.context["scope_stack"]:
                         cs = self.context["scope_stack"][-1]
@@ -207,12 +247,9 @@ class ASTJSONAnalyzer:
                     self.context["class_names"][class_name].add(lineno)
                     self.context["scope_stack"].append(f"class:{class_name}")
                     self.context["current_scope"] = f"class:{class_name}"
-
                     for item in node.get("body", []):
                         self.collect_context(item)
-
                     self.context["scope_stack"].pop()
-
                     cs = "global"
                     if self.context["scope_stack"]:
                         cs = self.context["scope_stack"][-1]
@@ -225,13 +262,13 @@ class ASTJSONAnalyzer:
 
     def apply_rules(self, node):
         """
-        Применение правил анализа
+        Применение правил анализа (заглушка - логика вынесена в отдельную функцию)
         """
-        if isinstance(node, dict):
-            pass
-        elif isinstance(node, list):
+        if isinstance(node, list):
             for item in node:
                 self.apply_rules(item)
+        elif isinstance(node, dict):
+            pass  # Правила применяются через apply_rule к context
 
 
 def apply_rule(analysis_dict, rule):
@@ -301,16 +338,42 @@ def apply_rule(analysis_dict, rule):
 
 
 if __name__ == "__main__":
-    sample_json = load_json("data", "ast.json")
-    analyzer = ASTJSONAnalyzer()
-    analyzer.analyze(sample_json)
-    # pprint.pprint(analyzer.context)
+    # Тестирование сериализации AST
+    filepath = "ast_checker_sample.py"
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            test_code = f.read()
+        tree = ast.parse(test_code)
+        serialized = ast_to_serializable(tree)
+        save_json("data", "ast.json", serialized)
 
-    from rules import EDUCATIONAL_RULES as rules
+        loaded = load_json("data", "ast.json")
+        restored_tree = serializable_to_ast(loaded)
+        ast.fix_missing_locations(restored_tree)
+        restored_code = ast.unparse(restored_tree)
+        print("Восстановленный код:")
+        print(restored_code)
+        print("\n" + "=" * 50 + "\n")
+    except FileNotFoundError:
+        print("Файл ast_checker_sample.py не найден, пропускаем тест сериализации")
 
-    for rule in rules:
-        errors = apply_rule(analyzer.context, rule)
-        if not errors:
-            continue
-        pprint.pprint(errors)
-        print()
+    # Тестирование анализатора
+    try:
+        sample_json = load_json("data", "ast.json")
+        analyzer = ASTJSONAnalyzer()
+        analyzer.analyze(sample_json)
+
+        try:
+            from rules import EDUCATIONAL_RULES as rules
+        except ImportError:
+            print("Файл rules.py не найден, пропускаем применение правил")
+            rules = []
+
+        print("Результаты анализа:")
+        for rule in rules:
+            errors = apply_rule(analyzer.context, rule)
+            if errors:
+                pprint.pprint(errors)
+                print()
+    except Exception as e:
+        print(f"Ошибка при анализе: {e}")

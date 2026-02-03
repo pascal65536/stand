@@ -31,11 +31,12 @@ print(*sorted(word_set_1 & word_set_2 & word_set_3))
 
 
 def col(a, b):
+    """Тест"""
     def tripple(c):
         return c * 3
 
-    c = a + b
-    return tripple(c)
+    l = a + b
+    return tripple(l)
 
 
 q = "1"

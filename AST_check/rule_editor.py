@@ -23,7 +23,7 @@ class RuleEditorWidget(QWidget):
             "function_calls", "declared_vars", "class_names", "function_names",
             "genexp", "lambda", "comprehension", "dictcomp", "setcomp"
         ]
-        self.checks = ["name", "count", "absent", "unused", "target"]
+        self.checks = ["name", "count", "absent", "unused", "target", "complexity", "duplicate", "magic", "depth"]
         
         self.init_ui()
 

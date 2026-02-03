@@ -1,5 +1,4 @@
 import ast
-import pprint
 from behoof import load_json, save_json
 from collections import defaultdict
 
@@ -381,18 +380,24 @@ if __name__ == "__main__":
     restored_tree = serializable_to_ast(loaded)
     ast.fix_missing_locations(restored_tree)
     restored_code = ast.unparse(restored_tree)
-    print("Восстановленный код:")
-    print(restored_code)
-    print("\n" + "=" * 50 + "\n")
+    # print("Восстановленный код:")
+    # print(restored_code)
+    # print("\n" + "=" * 50 + "\n")
 
     sample_json = load_json("data", "ast.json")
     analyzer = ASTJSONAnalyzer()
     analyzer.analyze(sample_json)
 
-    print("Результаты анализа:")
+    import pprint
+
+    pprint.pprint(analyzer.context)
+
+    # print("Результаты анализа:")
     rules = load_json("data", "rules.json")
     for rule in rules:
+        # print(rules)
+
         errors = apply_rule(analyzer.context, rule)
-        if errors:
-            pprint.pprint(errors)
-            print()
+        # if errors:
+        #     pprint.pprint(errors)
+        #     print()

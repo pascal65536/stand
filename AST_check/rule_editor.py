@@ -5,11 +5,11 @@ import shutil
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QTextEdit, QTableWidget, QTableWidgetItem, QSplitter,
-    QHeaderView, QComboBox, QLineEdit, QLabel, QMessageBox, QFrame, 
-    QGridLayout, QFileDialog
+    QFileDialog, QComboBox, QLineEdit, QLabel, QMessageBox, QFrame, 
+    QGridLayout
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+
 
 class RuleEditorWidget(QWidget):
     def __init__(self, rules_data):
@@ -17,52 +17,75 @@ class RuleEditorWidget(QWidget):
         self.rules_data = rules_data
         self.sort_column = 0
         self.sort_order = Qt.SortOrder.AscendingOrder
+        
+        self.targets = [
+            "store_vars", "load_vars", "imports", "import_from", "import_asname",
+            "function_calls", "declared_vars", "class_names", "function_names",
+            "genexp", "lambda", "comprehension", "dictcomp", "setcomp"
+        ]
+        self.checks = ["name", "count", "absent", "unused", "target"]
+        
         self.init_ui()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
+        
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        
         self.table = QTableWidget()
         self.table.setColumnCount(4)
-        self.table.setHorizontalHeaderLabels(["Код правила", "Цель", "Серьезность", "Действия"])  # ✅ Русские заголовки
+        self.table.setHorizontalHeaderLabels(["Код правила", "Цель", "Уровень", "Действия"])
         self.table.horizontalHeader().setSectionsClickable(True)
         self.table.horizontalHeader().sectionClicked.connect(self.sort_table)
         self.table.horizontalHeader().setStretchLastSection(True)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.itemSelectionChanged.connect(self.load_selected_rule)
         splitter.addWidget(self.table)
+        
         editor_widget = QWidget()
         editor_layout = QVBoxLayout(editor_widget)
+        
         form_frame = QFrame()
         form_layout = QGridLayout(form_frame)
+        
         row = 0
+        
         form_layout.addWidget(QLabel("Код правила:"), row, 0)
         self.code_edit = QLineEdit()
         form_layout.addWidget(self.code_edit, row, 1)
         row += 1
+        
         form_layout.addWidget(QLabel("Цель (target):"), row, 0)
-        self.target_edit = QLineEdit()
-        form_layout.addWidget(self.target_edit, row, 1)
+        self.target_combo = QComboBox()
+        self.target_combo.addItems(self.targets)
+        form_layout.addWidget(self.target_combo, row, 1)
         row += 1
+        
         form_layout.addWidget(QLabel("Check:"), row, 0)
-        self.check_edit = QLineEdit()
-        form_layout.addWidget(self.check_edit, row, 1)
+        self.check_combo = QComboBox()
+        self.check_combo.addItems(self.checks)
+        form_layout.addWidget(self.check_combo, row, 1)
         row += 1
+        
         form_layout.addWidget(QLabel("Условие:"), row, 0)
         self.condition_edit = QTextEdit()
         self.condition_edit.setMaximumHeight(60)
         form_layout.addWidget(self.condition_edit, row, 1)
         row += 1
+        
         form_layout.addWidget(QLabel("Сообщение:"), row, 0)
         self.message_edit = QTextEdit()
         self.message_edit.setMaximumHeight(80)
         form_layout.addWidget(self.message_edit, row, 1)
         row += 1
-        form_layout.addWidget(QLabel("Серьезность:"), row, 0)
+        
+        form_layout.addWidget(QLabel("Уровень:"), row, 0)
         self.severity_combo = QComboBox()
         self.severity_combo.addItems(["info", "low", "medium", "warning", "high", "error", "critical"])
         form_layout.addWidget(self.severity_combo, row, 1)
+        
         editor_layout.addWidget(form_frame)
+        
         btn_layout = QHBoxLayout()
         self.save_btn = QPushButton("💾 Сохранить правило")
         self.save_btn.clicked.connect(self.save_rule)
@@ -74,17 +97,21 @@ class RuleEditorWidget(QWidget):
         self.load_json_btn.clicked.connect(self.load_json_file)
         self.save_json_btn = QPushButton("💾 Сохранить JSON")
         self.save_json_btn.clicked.connect(self.save_json_file)
+        
         btn_layout.addWidget(self.save_btn)
         btn_layout.addWidget(self.add_btn)
         btn_layout.addWidget(self.delete_btn)
         btn_layout.addStretch()
         btn_layout.addWidget(self.load_json_btn)
         btn_layout.addWidget(self.save_json_btn)
+        
         editor_layout.addLayout(btn_layout)
         editor_layout.addStretch()
+        
         splitter.addWidget(editor_widget)
         splitter.setStretchFactor(0, 1)
         splitter.setStretchFactor(1, 1)
+        
         layout.addWidget(splitter)
         self.refresh_table()
 
@@ -114,7 +141,7 @@ class RuleEditorWidget(QWidget):
         reverse = self.sort_order == Qt.SortOrder.DescendingOrder
         
         def get_sort_key(rule, col):
-            if col == 0: 
+            if col == 0:
                 return rule.get("code", "").lower()
             elif col == 1:
                 return rule.get("target", "").lower()
@@ -147,8 +174,8 @@ class RuleEditorWidget(QWidget):
         row = selected[0].row()
         rule = self.rules_data[row]
         self.code_edit.setText(rule.get("code", ""))
-        self.target_edit.setText(rule.get("target", ""))
-        self.check_edit.setText(rule.get("check", ""))
+        self.target_combo.setCurrentText(rule.get("target", "")) 
+        self.check_combo.setCurrentText(rule.get("check", ""))   
         self.condition_edit.setPlainText(rule.get("condition", ""))
         self.message_edit.setPlainText(rule.get("message", ""))
         self.severity_combo.setCurrentText(rule.get("severity", "info"))
@@ -164,8 +191,8 @@ class RuleEditorWidget(QWidget):
         row = selected[0].row()
         self.rules_data[row] = {
             "code": self.code_edit.text(),
-            "target": self.target_edit.text(),
-            "check": self.check_edit.text(),
+            "target": self.target_combo.currentText(),
+            "check": self.check_combo.currentText(),  
             "condition": self.condition_edit.toPlainText(),
             "message": self.message_edit.toPlainText(),
             "severity": self.severity_combo.currentText()
@@ -241,13 +268,6 @@ class RuleEditorApp(QMainWindow):
         self.setWindowTitle("Редактор правил AST анализатора")
         self.resize(1200, 800)
         rules_data = []
-        if os.path.exists("rules.json"):
-            try:
-                self.widget = RuleEditorWidget(rules_data)
-            except:
-                rules_data = []
-        else:
-            rules_data = []
         central_widget = RuleEditorWidget(rules_data)
         self.setCentralWidget(central_widget)
 

@@ -2,7 +2,83 @@ import ast
 import pprint
 from behoof import load_json, save_json
 from collections import defaultdict
-from rules import EDUCATIONAL_RULES as rules
+
+
+BUILTIN_NAMES = {
+    "abs",
+    "json",
+    "all",
+    "any",
+    "ascii",
+    "subprocess",
+    "bin",
+    "bool",
+    "breakpoint",
+    "bytearray",
+    "bytes",
+    "callable",
+    "chr",
+    "classmethod",
+    "compile",
+    "complex",
+    "delattr",
+    "dict",
+    "dir",
+    "divmod",
+    "enumerate",
+    "eval",
+    "exec",
+    "filter",
+    "float",
+    "format",
+    "frozenset",
+    "getattr",
+    "globals",
+    "hasattr",
+    "hash",
+    "help",
+    "hex",
+    "id",
+    "input",
+    "int",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "list",
+    "locals",
+    "map",
+    "max",
+    "memoryview",
+    "min",
+    "next",
+    "object",
+    "oct",
+    "open",
+    "ord",
+    "pow",
+    "print",
+    "property",
+    "range",
+    "repr",
+    "reversed",
+    "round",
+    "set",
+    "setattr",
+    "slice",
+    "sorted",
+    "staticmethod",
+    "str",
+    "sum",
+    "super",
+    "tuple",
+    "type",
+    "vars",
+    "zip",
+    "__import__",
+}
+DANGEROUS_FUNCTIONS = {"eval", "exec", "compile", "__import__"}
+FORBIDDEN_IMPORTS = {"os", "sys", "subprocess", "shutil", "pickle"}
 
 
 def ast_to_serializable(node):
@@ -85,80 +161,6 @@ class ASTJSONAnalyzer:
     """
     Анализатор ошибок на основе сериализованного AST
     """
-
-    BUILTIN_NAMES = {
-        "abs",
-        "all",
-        "any",
-        "ascii",
-        "bin",
-        "bool",
-        "breakpoint",
-        "bytearray",
-        "bytes",
-        "callable",
-        "chr",
-        "classmethod",
-        "compile",
-        "complex",
-        "delattr",
-        "dict",
-        "dir",
-        "divmod",
-        "enumerate",
-        "eval",
-        "exec",
-        "filter",
-        "float",
-        "format",
-        "frozenset",
-        "getattr",
-        "globals",
-        "hasattr",
-        "hash",
-        "help",
-        "hex",
-        "id",
-        "input",
-        "int",
-        "isinstance",
-        "issubclass",
-        "iter",
-        "len",
-        "list",
-        "locals",
-        "map",
-        "max",
-        "memoryview",
-        "min",
-        "next",
-        "object",
-        "oct",
-        "open",
-        "ord",
-        "pow",
-        "print",
-        "property",
-        "range",
-        "repr",
-        "reversed",
-        "round",
-        "set",
-        "setattr",
-        "slice",
-        "sorted",
-        "staticmethod",
-        "str",
-        "sum",
-        "super",
-        "tuple",
-        "type",
-        "vars",
-        "zip",
-        "__import__",
-    }
-    DANGEROUS_FUNCTIONS = {"eval", "exec", "compile", "__import__"}
-    FORBIDDEN_IMPORTS = {"os", "sys", "subprocess", "shutil", "pickle"}
 
     def __init__(self):
         self.errors = []
@@ -269,26 +271,49 @@ class ASTJSONAnalyzer:
             for item in node:
                 self.apply_rules(item)
         elif isinstance(node, dict):
-            pass  # Правила применяются через apply_rule к context
-
+            pass
 
 def apply_rule(analysis_dict, rule):
     """
     Применяет правило к словарю анализа
     """
     violations = []
-
-    if rule["check"] == "absent":
-        if rule["target"] not in analysis_dict:
-            return []
-        return [
-            {
-                "code": rule["code"],
-                "lines": [],
-                "message": rule["message"],
-                "severity": rule.get("severity", "medium"),
-            }
-        ]
+    match rule["check"]:
+        case "absent":
+            if rule["target"] not in analysis_dict:
+                return []
+            return [
+                {
+                    "code": rule["code"],
+                    "lines": [],
+                    "message": rule["message"],
+                    "severity": rule.get("severity", "medium"),
+                }
+            ]
+        case "unused":
+            declared_target = rule["target"]
+            calls_target = "function_calls" if declared_target == "function_names" else "load_vars"
+            
+            declared_collection = analysis_dict.get(declared_target, {})
+            calls_collection = analysis_dict.get(calls_target, {})
+            
+            for name, declared_lines in declared_collection.items():
+                called_lines = calls_collection.get(name, set())
+                if not called_lines:
+                    lines = sorted(declared_lines)
+                    message = rule["message"].format(
+                        name=name,
+                        lines=lines,
+                        count=len(lines)
+                    )
+                    violations.append({
+                        "code": rule["code"],
+                        "lines": lines,
+                        "name": name,
+                        "message": message,
+                        "severity": rule.get("severity", "medium"),
+                    })
+            return violations
 
     collection = analysis_dict.get(rule["target"], {})
     if not collection:
@@ -307,7 +332,13 @@ def apply_rule(analysis_dict, rule):
         lines = sorted(lines_set)
         count = len(lines)
 
-        context = {**safe_context, "name": name, "lines": lines, "count": count}
+        context = {
+            **safe_context,
+            "name": name,
+            "lines": lines,
+            "count": count,
+            "BUILTIN_NAMES": BUILTIN_NAMES,
+        }
 
         try:
             if eval(rule["condition"], {"__builtins__": {}}, context):
@@ -359,6 +390,7 @@ if __name__ == "__main__":
     analyzer.analyze(sample_json)
 
     print("Результаты анализа:")
+    rules = load_json("data", "rules.json")
     for rule in rules:
         errors = apply_rule(analyzer.context, rule)
         if errors:

@@ -306,7 +306,7 @@ if __name__ == "__main__":
     analyzer.analyze(sample_json)
     # pprint.pprint(analyzer.context)
 
-    from rules import EDUCATIONAL_RULES as rules
+    from AST_check._rules import EDUCATIONAL_RULES as rules
 
     for rule in rules:
         errors = apply_rule(analyzer.context, rule)

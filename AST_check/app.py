@@ -143,12 +143,12 @@ class CodeCheckerApp(QMainWindow):
 
             tree = ast.parse(code)
             serialized = ast_to_serializable(tree)
-            save_json("data", "temp_ast.json", serialized)
+            save_json("data", "ast.json", serialized)
 
             self.analyzer = ASTJSONAnalyzer()
-            ast_json = load_json("data", "temp_ast.json")
+            ast_json = load_json("data", "ast.json")
             self.analyzer.analyze(ast_json)
-
+            
             all_errors = []
             for rule in educational_rules:
                 rule_errors = apply_rule(self.analyzer.context, rule)
@@ -170,8 +170,8 @@ class CodeCheckerApp(QMainWindow):
             )
         finally:
             try:
-                filename = os.path.join("data", "temp_ast.json")
-                os.remove(filename)
+                filename = os.path.join("data", "ast.json")
+                # os.remove(filename)
             except:
                 pass
             self.analyze_btn.setEnabled(True)

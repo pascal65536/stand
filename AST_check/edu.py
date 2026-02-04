@@ -1,8 +1,20 @@
 import ast
+from pprint import pprint
 from behoof import load_json, save_json
 from collections import defaultdict
 
 
+KEYS = [
+    "class_names",
+    "declared_vars",
+    "function_calls",
+    "function_names",
+    "import_asname",
+    "import_from",
+    "imports",
+    "load_vars",
+    "store_vars",
+]
 BUILTIN_NAMES = {
     "abs",
     "json",
@@ -75,6 +87,7 @@ BUILTIN_NAMES = {
     "vars",
     "zip",
     "__import__",
+    "__str__",
 }
 DANGEROUS_FUNCTIONS = {"eval", "exec", "compile", "__import__"}
 FORBIDDEN_IMPORTS = {"os", "sys", "subprocess", "shutil", "pickle"}
@@ -272,6 +285,25 @@ class ASTJSONAnalyzer:
         elif isinstance(node, dict):
             pass
 
+    def groupon(self):
+        group_dct = {}
+        for key, values in self.context.items():
+            if not isinstance(values, dict):
+                continue
+            if not values:
+                continue
+            for k, v in values.items():
+                group_dct.setdefault(k, {}).setdefault(key, list())
+                group_dct.setdefault(k, {}).setdefault("lines", list())
+                group_dct[k][key].extend(list(v))
+                group_dct[k]["lines"].extend(list(v))
+
+        for k, v in group_dct.items():
+            group_dct[k]["lineno"] = min(v["lines"])
+            group_dct[k]["keys"] = ''.join([str(int(k in v)) for k in KEYS])
+        return group_dct
+
+
 def apply_rule(analysis_dict, rule):
     """
     Применяет правило к словарю анализа
@@ -380,27 +412,25 @@ if __name__ == "__main__":
     restored_tree = serializable_to_ast(loaded)
     ast.fix_missing_locations(restored_tree)
     restored_code = ast.unparse(restored_tree)
-    # print("Восстановленный код:")
-    # print(restored_code)
-    # print("\n" + "=" * 50 + "\n")
+    print("Восстановленный код:")
+    print(restored_code)
+    print("\n" + "=" * 50 + "\n")
 
     sample_json = load_json("data", "ast.json")
     analyzer = ASTJSONAnalyzer()
     analyzer.analyze(sample_json)
 
-    # import pprint, json
-    # analyzer_context = dict()
-    # for k, v in analyzer.context.items():
-    #     analyzer_context[k] = dict(v)
-    # pprint.pprint(analyzer.context)
-    # save_json("data", "analyzer.json", analyzer.context)
+    # pprint(analyzer.context)
 
-    # print("Результаты анализа:")
+    group_dct = analyzer.groupon()
+    pprint("-" * 80)
+    pprint(group_dct)
+    # exit()
+
+    print("Результаты анализа:")
     rules = load_json("data", "rules.json")
     for rule in rules:
-        # print(rules)
-
         errors = apply_rule(analyzer.context, rule)
-        # if errors:
-        #     pprint.pprint(errors)
-        #     print()
+        if errors:
+            pprint(errors)
+            print('-' * 50)

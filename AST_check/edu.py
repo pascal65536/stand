@@ -1,7 +1,9 @@
 import ast
+import re
+from string import ascii_lowercase as al, ascii_uppercase as au, digits as dg
 from pprint import pprint
-from behoof import load_json, save_json
 from collections import defaultdict
+from behoof import load_json, save_json
 
 
 KEYS = [
@@ -15,82 +17,19 @@ KEYS = [
     "load_vars",
     "store_vars",
 ]
+
 BUILTIN_NAMES = {
-    "abs",
-    "json",
-    "all",
-    "any",
-    "ascii",
-    "subprocess",
-    "bin",
-    "bool",
-    "breakpoint",
-    "bytearray",
-    "bytes",
-    "callable",
-    "chr",
-    "classmethod",
-    "compile",
-    "complex",
-    "delattr",
-    "dict",
-    "dir",
-    "divmod",
-    "enumerate",
-    "eval",
-    "exec",
-    "filter",
-    "float",
-    "format",
-    "frozenset",
-    "getattr",
-    "globals",
-    "hasattr",
-    "hash",
-    "help",
-    "hex",
-    "id",
-    "input",
-    "int",
-    "isinstance",
-    "issubclass",
-    "iter",
-    "len",
-    "list",
-    "locals",
-    "map",
-    "max",
-    "memoryview",
-    "min",
-    "next",
-    "object",
-    "oct",
-    "open",
-    "ord",
-    "pow",
-    "print",
-    "property",
-    "range",
-    "repr",
-    "reversed",
-    "round",
-    "set",
-    "setattr",
-    "slice",
-    "sorted",
-    "staticmethod",
-    "str",
-    "sum",
-    "super",
-    "tuple",
-    "type",
-    "vars",
-    "zip",
-    "__import__",
-    "__str__",
+    "abs", "all", "any", "ascii", "bin", "bool", "breakpoint", "bytearray", "bytes",
+    "callable", "chr", "classmethod", "compile", "complex", "delattr", "dict", "dir",
+    "divmod", "enumerate", "eval", "exec", "filter", "float", "format", "frozenset",
+    "getattr", "globals", "hasattr", "hash", "help", "hex", "id", "input", "int",
+    "isinstance", "issubclass", "iter", "len", "list", "locals", "map", "max",
+    "memoryview", "min", "next", "object", "oct", "open", "ord", "pow", "print",
+    "property", "range", "repr", "reversed", "round", "set", "setattr", "slice",
+    "sorted", "staticmethod", "str", "sum", "super", "tuple", "type", "vars", "zip",
+    "__import__", "__str__",
 }
-DANGEROUS_FUNCTIONS = {"eval", "exec", "compile", "__import__"}
-FORBIDDEN_IMPORTS = {"os", "sys", "subprocess", "shutil", "pickle"}
+
 
 
 def ast_to_serializable(node):
@@ -136,39 +75,6 @@ def serializable_to_ast(data):
         return data
 
 
-class ProgrammingError:
-    """
-    Структура данных для представления ошибки
-    """
-
-    def __init__(
-        self, rule_id, severity, lineno, message, pedagogical_note="", node=None
-    ):
-        self.rule_id = rule_id
-        self.severity = severity
-        self.lineno = lineno
-        self.message = message
-        self.pedagogical_note = pedagogical_note
-        self.node = node
-
-    def to_dict(self):
-        return {
-            "rule_id": self.rule_id,
-            "severity": self.severity,
-            "lineno": self.lineno,
-            "message": self.message,
-            "pedagogical_note": self.pedagogical_note,
-        }
-
-    def __repr__(self):
-        icon = (
-            "❌"
-            if self.severity == "error"
-            else "⚠️" if self.severity == "warning" else "💡"
-        )
-        return f"{icon} [{self.rule_id}] строка {self.lineno}: {self.message}"
-
-
 class ASTJSONAnalyzer:
     """
     Анализатор ошибок на основе сериализованного AST
@@ -190,15 +96,6 @@ class ASTJSONAnalyzer:
             "scope_stack": ["global"],
         }
 
-    def analyze(self, ast_json):
-        """
-        Основной метод анализа
-        """
-        self.errors = []
-        self.collect_context(ast_json)
-        self.apply_rules(ast_json)
-        return self.errors
-
     def collect_context(self, node):
         """
         Сбор контекстной информации для анализа
@@ -215,26 +112,31 @@ class ASTJSONAnalyzer:
                     if module:
                         self.context["imports"][module].add(lineno)
                     for name in node.get("names", []):
-                        module_key = f"{module}.{name['name']}"
+                        module_name = name.get("name", "")
+                        module_key = f"{module}.{module_name}" if module else module_name
                         module_lineno = name.get("lineno", 0)
                         module_asname = name.get("asname")
                         self.context["import_from"][module_key].add(module_lineno)
                         if module_asname:
-                            mak = f"{module}.{name['name']} as {module_asname}"
+                            mak = f"{module}.{module_name} as {module_asname}"
                             self.context["import_asname"][mak].add(module_lineno)
                 case "Import":
                     for alias in node.get("names", []):
-                        module = alias.get("name")
+                        module = alias.get("name", "")
                         if module:
                             self.context["imports"][module].add(lineno)
                 case "Name":
-                    var_name = node.get("id")
-                    ctx = node.get("ctx", {}).get("_type")
-                    if ctx:
-                        key = f"{ctx.lower()}_vars"
-                        self.context[key][var_name].add(lineno)
+                    var_name = node.get("id", "")
+                    ctx_node = node.get("ctx", {})
+                    ctx_type = ctx_node.get("_type", "")
+                    if ctx_type == "Store":
+                        self.context["store_vars"][var_name].add(lineno)
+                        self.context["declared_vars"][var_name].add(lineno)
+                    elif ctx_type == "Load":
+                        self.context["load_vars"][var_name].add(lineno)
                 case "Call":
                     func_node = node.get("func", {})
+                    func_name = ""
                     if func_node.get("_type") == "Name":
                         func_name = func_node.get("id", "")
                     elif func_node.get("_type") == "Attribute":
@@ -253,10 +155,7 @@ class ASTJSONAnalyzer:
                     for item in node.get("body", []):
                         self.collect_context(item)
                     self.context["scope_stack"].pop()
-                    cs = "global"
-                    if self.context["scope_stack"]:
-                        cs = self.context["scope_stack"][-1]
-                    self.context["current_scope"] = cs
+                    self.context["current_scope"] = self.context["scope_stack"][-1] if self.context["scope_stack"] else "global"
                 case "ClassDef":
                     class_name = node.get("name", "<anonymous>")
                     self.context["class_names"][class_name].add(lineno)
@@ -265,172 +164,132 @@ class ASTJSONAnalyzer:
                     for item in node.get("body", []):
                         self.collect_context(item)
                     self.context["scope_stack"].pop()
-                    cs = "global"
-                    if self.context["scope_stack"]:
-                        cs = self.context["scope_stack"][-1]
-                    self.context["current_scope"] = cs
+                    self.context["current_scope"] = self.context["scope_stack"][-1] if self.context["scope_stack"] else "global"
 
             for value in node.values():
-                if value is None:
-                    continue
-                self.collect_context(value)
-
-    def apply_rules(self, node):
-        """
-        Применение правил анализа (заглушка - логика вынесена в отдельную функцию)
-        """
-        if isinstance(node, list):
-            for item in node:
-                self.apply_rules(item)
-        elif isinstance(node, dict):
-            pass
+                if isinstance(value, (dict, list)):
+                    self.collect_context(value)
 
     def groupon(self):
+        """
+        Группировка собранных данных по именам с обогащением метаинформацией
+        """
         group_dct = {}
+        
         for key, values in self.context.items():
-            if not isinstance(values, dict):
+            if not isinstance(values, dict) or not values:
                 continue
-            if not values:
-                continue
-            for k, v in values.items():
-                group_dct.setdefault(k, {}).setdefault(key, list())
-                group_dct.setdefault(k, {}).setdefault("lines", list())
-                group_dct[k][key].extend(list(v))
-                group_dct[k]["lines"].extend(list(v))
-
-        for k, v in group_dct.items():
-            group_dct[k]["lineno"] = min(v["lines"])
-            group_dct[k]["keys"] = ''.join([str(int(k in v)) for k in KEYS])
+            for name, line_numbers in values.items():
+                if name not in group_dct:
+                    group_dct[name] = {"lines": []}
+                group_dct[name].setdefault(key, []).extend(line_numbers)
+                group_dct[name]["lines"].extend(line_numbers)
+        
+        for name, data in group_dct.items():
+            data["lineno"] = min(data["lines"]) if data["lines"] else 0
+            data["keys"] = [ctx_key for ctx_key in KEYS if ctx_key in data]
+            data["dunderscore"] = name.startswith("__") and name.endswith("__") and len(name) > 4
+            data["startdigit"] = bool(name) and name[0].isdigit()
+            data["snakecase"] = bool(name) and set(name).issubset(set("_" + al + dg)) and not name[0].isdigit()
+            data["camelcase"] = bool(name) and name[0].isupper() and set(name).issubset(set(al + au + dg))
+            data["lowercase"] = bool(name) and name.islower() and set(name).issubset(set(al + dg + "_"))
+            
         return group_dct
 
-
-def apply_rule(analysis_dict, rule):
-    """
-    Применяет правило к словарю анализа
-    """
-    violations = []
-    match rule["check"]:
-        case "absent":
-            if rule["target"] not in analysis_dict:
-                return []
-            return [
-                {
-                    "code": rule["code"],
-                    "lines": [],
-                    "message": rule["message"],
-                    "severity": rule.get("severity", "medium"),
-                }
-            ]
-        case "unused":
-            declared_target = rule["target"]
-            calls_target = "function_calls" if declared_target == "function_names" else "load_vars"
-            
-            declared_collection = analysis_dict.get(declared_target, {})
-            calls_collection = analysis_dict.get(calls_target, {})
-            
-            for name, declared_lines in declared_collection.items():
-                called_lines = calls_collection.get(name, set())
-                if not called_lines:
-                    lines = sorted(declared_lines)
-                    message = rule["message"].format(
-                        name=name,
-                        lines=lines,
-                        count=len(lines)
-                    )
-                    violations.append({
-                        "code": rule["code"],
-                        "lines": lines,
-                        "name": name,
-                        "message": message,
-                        "severity": rule.get("severity", "medium"),
-                    })
+    def apply_rule(self, group_dct, rule):
+        """
+        Безопасное применение правил с контролируемым окружением для условий
+        """
+        violations = []
+        rule_keys = rule.get("keys", [])
+        condition = rule["condition"]
+        
+        try:
+            compiled_condition = compile(condition, "<rule>", "eval")
+        except SyntaxError as e:
+            print(f"Синтаксическая ошибка в правиле {rule.get('code', 'N/A')}: {e}")
             return violations
 
-    collection = analysis_dict.get(rule["target"], {})
-    if not collection:
-        return []
+        def re_search(pattern, s):
+            try:
+                return re.search(pattern, str(s)) is not None
+            except Exception:
+                return False
 
-    safe_context = {
-        "len": len,
-        "set": set,
-        "any": any,
-        "all": all,
-        "range": range,
-        "__builtins__": {},
-    }
-
-    for name, lines_set in collection.items():
-        lines = sorted(lines_set)
-        count = len(lines)
-
-        context = {
-            **safe_context,
-            "name": name,
-            "lines": lines,
-            "count": count,
-            "BUILTIN_NAMES": BUILTIN_NAMES,
-        }
-
-        try:
-            if eval(rule["condition"], {"__builtins__": {}}, context):
-                message = rule["message"].format(
-                    name=name,
-                    lines=lines,
-                    count=count,
-                    first_line=lines[0] if lines else None,
-                )
-                violations.append(
-                    {
+        for name, value in group_dct.items():
+            if rule_keys and not any(key in value for key in rule_keys):
+                continue
+            
+            safe_context = {
+                'name': name,
+                'value': value,
+                'keys': value.get('keys', []),
+                'lineno': value.get('lineno', 0),
+                'underscore': name.startswith("_") and not name.startswith("__"),
+                'dunderscore': value.get('dunderscore', False),
+                'startdigit': value.get('startdigit', False),
+                'snakecase': value.get('snakecase', False),
+                'camelcase': value.get('camelcase', False),
+                'lowercase': value.get('lowercase', False),
+                'len': len,
+                'any': any,
+                'all': all,
+                'set': set,
+                'tuple': tuple,
+                're_search': re_search,
+                'BUILTIN_NAMES': BUILTIN_NAMES,
+            }
+            
+            try:
+                if eval(compiled_condition, {"__builtins__": {}}, safe_context):
+                    violations.append({
                         "code": rule["code"],
-                        "lines": lines,
+                        "message": rule["message"].format(name=name, lineno=value.get('lineno', 0)),
+                        "severity": rule["severity"],
+                        "lineno": value.get('lineno', 0),
                         "name": name,
-                        "message": message,
-                        "severity": rule.get("severity", "medium"),
-                    }
-                )
-        except Exception as e:
-            violations.append(
-                {
-                    "code": "RULE_ERROR",
-                    "message": f"Ошибка в правиле {rule['code']}: {e}",
-                    "severity": "critical",
-                }
-            )
-
-    return violations
+                    })
+            except Exception as e:
+                continue
+        
+        return violations
 
 
 if __name__ == "__main__":
     filepath = "ast_checker_sample.py"
     with open(filepath, "r", encoding="utf-8") as f:
         test_code = f.read()
+
+    # Парсинг и сериализация AST
     tree = ast.parse(test_code)
     serialized = ast_to_serializable(tree)
     save_json("data", "ast.json", serialized)
 
+    # Загрузка и анализ
     loaded = load_json("data", "ast.json")
-    restored_tree = serializable_to_ast(loaded)
-    ast.fix_missing_locations(restored_tree)
-    restored_code = ast.unparse(restored_tree)
-    print("Восстановленный код:")
-    print(restored_code)
-    print("\n" + "=" * 50 + "\n")
-
-    sample_json = load_json("data", "ast.json")
     analyzer = ASTJSONAnalyzer()
-    analyzer.analyze(sample_json)
-
-    # pprint(analyzer.context)
-
+    analyzer.collect_context(loaded)
     group_dct = analyzer.groupon()
-    pprint("-" * 80)
-    pprint(group_dct)
-    # exit()
 
-    print("Результаты анализа:")
+    # Применение правил
+    all_violations = []
+    print("=" * 70)
+
     rules = load_json("data", "rules.json")
     for rule in rules:
-        errors = apply_rule(analyzer.context, rule)
-        if errors:
-            pprint(errors)
-            print('-' * 50)
+        violations = analyzer.apply_rule(group_dct, rule)
+        if violations:
+            print(f"Правило {rule['code']} ({rule['severity']}):")
+            for v in violations:
+                print(f"{v['message']}")
+            all_violations.extend(violations)
+            print("-" * 70)
+    
+    if not all_violations:
+        print("Ошибок нет!")
+    else:
+        print(f"Нарушений {len(all_violations)} из них:")
+        print(f"- Ошибок {len([v for v in all_violations if v['severity'] == 'error'])}")
+        print(f"- Предупреждений {len([v for v in all_violations if v['severity'] == 'warning'])}")
+    
+    print("=" * 70)

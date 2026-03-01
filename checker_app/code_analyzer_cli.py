@@ -11,7 +11,7 @@ TOOLS = {
     "3": "mypy",
     "4": "bandit",
     "5": "vulture",
-    "6": "pycodestyle",  # <-- ДОБАВЛЕНО
+    "6": "pycodestyle",
     "0": "exit",
 }
 
@@ -27,7 +27,6 @@ def run_command(cmd: list) -> str:
         return ""
 
 
-# --- Анализаторы ---
 def analyze_pylint(filepath: str) -> str:
     return run_command(["pylint", filepath, "--output-format=json"])
 
@@ -109,7 +108,6 @@ def save_report(tool: str, output: str, filename: str):
         print(f"Отчёт (сырой вывод) сохранён в {json_filename}")
 
 
-# --- Основная логика ---
 def main():
     print("=== Анализатор Python-кода (CLI) ===")
     filename = input("Введите имя файла для анализа (например, my_script.py): ").strip()

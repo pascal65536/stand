@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
     QSplitter,
     QMenu,
 )
-from PyQt6.QtGui import QAction  # Исправленный импорт
+from PyQt6.QtGui import QAction
 from PyQt6.QtCore import QProcess
 
 
